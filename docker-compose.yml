@@ -1,0 +1,128 @@
+# Local stack. Secrets come from .env (git-ignored); create it once with:
+#   pwsh -File scripts/init-env.ps1
+#
+#   Whole stack:       docker compose up -d --build
+#   Infra only:        docker compose up -d postgres redis   (then run the .NET hosts with `dotnet run`)
+#   With OpenSearch:   add --profile search                    (~1 GB RAM)
+#
+# Ports: web 3000 · api 5080 · realtime 5081 · postgres 5432 · redis 6379 · opensearch 9200
+name: marketplace
+
+x-dotnet-env: &dotnet-env
+  ASPNETCORE_ENVIRONMENT: Development
+  DOTNET_ENVIRONMENT: Development
+  ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-marketplace};Username=${POSTGRES_USER:-marketplace};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (run scripts/init-env.ps1)}
+  ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env (run scripts/init-env.ps1)}
+  Auth__SigningKey: ${AUTH_SIGNING_KEY:?Set AUTH_SIGNING_KEY in .env (run scripts/init-env.ps1)}
+  Auth__DevTokens: "true"
+
+services:
+  # ---- Applications ---------------------------------------------------------
+
+  api:
+    build:
+      context: .
+      args:
+        PROJECT: Marketplace.Api
+    image: marketplace/api:dev
+    environment:
+      <<: *dotnet-env
+      Database__MigrateOnStartup: "true"
+      Cors__Origins__0: http://localhost:3000
+    ports:
+      - "5080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  realtime:
+    build:
+      context: .
+      args:
+        PROJECT: Marketplace.Realtime
+    image: marketplace/realtime:dev
+    environment:
+      <<: *dotnet-env
+      Cors__Origins__0: http://localhost:3000
+    ports:
+      - "5081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      args:
+        PROJECT: Marketplace.Worker
+    image: marketplace/worker:dev
+    environment:
+      <<: *dotnet-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      api:
+        condition: service_started   # api applies migrations first
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+    image: marketplace/web:dev
+    environment:
+      API_URL: http://api:8080                       # server-side calls go over the compose network
+      REALTIME_PUBLIC_URL: http://localhost:5081     # the browser connects to realtime directly
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ---- Infrastructure -------------------------------------------------------
+
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-marketplace}
+      POSTGRES_USER: ${POSTGRES_USER:-marketplace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (run scripts/init-env.ps1)}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env (run scripts/init-env.ps1)}"]
+    ports:
+      - "6379:6379"
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    profiles: ["search"]
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - osdata:/usr/share/opensearch/data
+
+volumes:
+  pgdata:
+  osdata:

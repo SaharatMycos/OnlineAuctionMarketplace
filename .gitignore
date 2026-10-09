@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+.vs/
+.idea/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Local config and secrets
+.env
+.env.local
+appsettings.Local.json

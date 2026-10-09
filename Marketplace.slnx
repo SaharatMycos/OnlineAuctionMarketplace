@@ -1,0 +1,32 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Marketplace.Api/Marketplace.Api.csproj" />
+    <Project Path="src/Marketplace.Realtime/Marketplace.Realtime.csproj" />
+    <Project Path="src/Marketplace.Worker/Marketplace.Worker.csproj" />
+    <Project Path="src/Marketplace.Bootstrap/Marketplace.Bootstrap.csproj" />
+    <Project Path="src/Marketplace.SharedKernel/Marketplace.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/Marketplace.Modules.Identity/Marketplace.Modules.Identity.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Location.Contracts/Marketplace.Modules.Location.Contracts.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Location/Marketplace.Modules.Location.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Catalog.Contracts/Marketplace.Modules.Catalog.Contracts.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Catalog/Marketplace.Modules.Catalog.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Auctions.Contracts/Marketplace.Modules.Auctions.Contracts.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Auctions/Marketplace.Modules.Auctions.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Orders.Contracts/Marketplace.Modules.Orders.Contracts.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Orders/Marketplace.Modules.Orders.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Billing/Marketplace.Modules.Billing.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Reviews/Marketplace.Modules.Reviews.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Messaging/Marketplace.Modules.Messaging.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Notifications/Marketplace.Modules.Notifications.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Search/Marketplace.Modules.Search.csproj" />
+    <Project Path="src/Modules/Marketplace.Modules.Admin/Marketplace.Modules.Admin.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Marketplace.ArchitectureTests/Marketplace.ArchitectureTests.csproj" />
+    <Project Path="tests/Marketplace.Api.Tests/Marketplace.Api.Tests.csproj" />
+    <Project Path="tests/Marketplace.IntegrationTests/Marketplace.IntegrationTests.csproj" />
+    <Project Path="tests/Marketplace.UnitTests/Marketplace.UnitTests.csproj" />
+  </Folder>
+</Solution>

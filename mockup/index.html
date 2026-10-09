@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bidly Mockup</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="#/" class="logo" aria-label="Bidly home"><span class="logo-mark">⚖</span> Bidly <span class="logo-tag">mockup</span></a>
+      <form class="search" data-form="search" role="search">
+        <input name="q" type="search" placeholder="Search auctions, lots, brands…" aria-label="Search">
+        <button class="btn primary" type="submit">Search</button>
+      </form>
+      <nav class="nav">
+        <button class="chip loc-chip" data-action="loc" aria-label="Change location">📍 <span id="loc-label">Chicago, IL · 25 km</span></button>
+        <a href="#/sell">Sell</a>
+        <a href="#/me">My auctions</a>
+        <a href="#/business">Business</a>
+        <label class="account">
+          <span class="sr-only">Account</span>
+          <select data-change="account" aria-label="Switch account">
+            <option value="personal">👤 Alex Kim (personal)</option>
+            <option value="org">🏢 Acme Supply Co. · Anna Ruiz</option>
+          </select>
+        </label>
+      </nav>
+    </div>
+    <div class="modebar">
+      <div class="modebar-inner" role="tablist" aria-label="Marketplace mode">
+        <button data-action="mode" data-mode="all" role="tab">All</button>
+        <button data-action="mode" data-mode="consumer" role="tab">Consumer <span class="muted">C2C · B2C</span></button>
+        <button data-action="mode" data-mode="business" role="tab">Business <span class="muted">B2B</span></button>
+        <a class="modebar-link" href="#/rfq/r1">Procurement (reverse auctions) →</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="footer">
+    Clickable mockup for the spec in <code>../docs/</code>. All data is simulated in the browser. Other bidders are bots.
+  </footer>
+
+  <div id="modal" hidden></div>
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

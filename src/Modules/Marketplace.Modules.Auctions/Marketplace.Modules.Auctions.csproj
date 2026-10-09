@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\Marketplace.SharedKernel\Marketplace.SharedKernel.csproj" />
+    <ProjectReference Include="..\Marketplace.Modules.Auctions.Contracts\Marketplace.Modules.Auctions.Contracts.csproj" />
+    <ProjectReference Include="..\Marketplace.Modules.Catalog.Contracts\Marketplace.Modules.Catalog.Contracts.csproj" />
+  </ItemGroup>
+</Project>

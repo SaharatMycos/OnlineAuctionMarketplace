@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Marketplace.SharedKernel\Marketplace.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Identity\Marketplace.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Location\Marketplace.Modules.Location.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Catalog\Marketplace.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Auctions\Marketplace.Modules.Auctions.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Orders\Marketplace.Modules.Orders.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Billing\Marketplace.Modules.Billing.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Reviews\Marketplace.Modules.Reviews.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Messaging\Marketplace.Modules.Messaging.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Notifications\Marketplace.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Search\Marketplace.Modules.Search.csproj" />
+    <ProjectReference Include="..\Modules\Marketplace.Modules.Admin\Marketplace.Modules.Admin.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+</Project>

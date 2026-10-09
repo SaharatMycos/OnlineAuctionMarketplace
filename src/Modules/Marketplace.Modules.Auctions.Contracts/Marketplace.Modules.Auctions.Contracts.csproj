@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Public surface of the Auctions module: integration events and query interfaces only. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Marketplace.SharedKernel\Marketplace.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

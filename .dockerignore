@@ -1,0 +1,16 @@
+# Build context for the .NET Dockerfile. The web app has its own context (web/).
+**/bin/
+**/obj/
+**/TestResults/
+**/node_modules/
+**/.next/
+.git/
+.vs/
+.idea/
+.claude/
+docs/
+mockup/
+web/
+**/*.user
+**/appsettings.Local.json
+.env
