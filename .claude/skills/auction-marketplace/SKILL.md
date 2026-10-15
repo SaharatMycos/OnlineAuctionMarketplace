@@ -45,22 +45,29 @@ These are enforced by tests. Don't work around them.
 ## Workflows
 
 ### Run and verify
-**Secrets first:** if the repo root has no `.env`, create it with `pwsh -File scripts/init-env.ps1` (random values, git-ignored). Compose and `dotnet run`/`dotnet ef` both read it. Never put a password or key in `appsettings*.json`, `docker-compose.yml` or code. Add new secrets to `.env.example` as `NAME=change-me`, reference them in compose as `${NAME:?...}`, and add the .NET-shaped key (`Section__Key=${NAME}`) to `.env.example` for local runs.
+**Secrets first:** run `pwsh -File scripts/init-env.ps1`. It creates `.env`, which compose reads, and regenerates each host's git-ignored `appsettings.Development.json` from it; `dotnet run` and `dotnet ef` read those files through standard .NET configuration (there is no `.env` loader in .NET). Never put a password or key in the committed `appsettings.json`, `docker-compose.yml` or code. To add a secret:
+- add it to `.env.example` as `NAME=change-me`;
+- reference it in compose as `${NAME:?...}`;
+- write it into the hosts' JSON in `init-env.ps1`.
 
-**Whole stack in Docker** (web 3000, api 5080, realtime 5081, worker, postgres, redis):
+**Postgres is native, not Docker.** A local PostgreSQL with PostGIS runs on the host at 5432. The database is code-first end to end: `DatabaseMigrator` creates it if missing (`IRelationalDatabaseCreator`), then applies every module's migrations (PostGIS included), so the `.env` user needs CREATEDB plus the right to create the postgis extension (the `postgres` superuser locally). Don't add SQL setup scripts. On a fresh database EF logs `fail:` for the missing `__ef_migrations_history` tables before creating them; that's expected. The host is configurable for another server: `POSTGRES_HOST` (default `localhost`, written into `appsettings.Development.json` by `init-env.ps1`) and `POSTGRES_HOST_FROM_DOCKER` for compose (default `host.docker.internal`, i.e. this machine). Only the integration tests run Postgres in a container (Testcontainers). Never add a `postgres` service back to compose.
+
+**Whole stack in Docker** (web 3000, api 5080, realtime 5081, worker, redis; Postgres on the host):
 ```bash
 docker compose up -d --build
 ```
 After changing a service, rebuild just that one with `docker compose up -d --build <service>`. Read logs with `docker compose logs -f <service>`. The .NET images come from the root `Dockerfile` (build arg `PROJECT`), and the web image from `web/Dockerfile` (Next.js standalone). If you add a new host project, add a compose service with its `PROJECT` arg.
 
+**Visual Studio "Docker Compose" launch:** `docker-compose.dcproj` (VS only; the dotnet CLI skips it) plus `Properties/launchSettings.json` at the repo root, which debugs api, realtime and worker in their containers. Each host csproj has `DockerComposeProjectPath` and `DockerfileFile` pointing at the shared root `Dockerfile`; VS fast mode builds its `base` stage and mounts the build output. A new host project needs the same csproj properties and a `serviceActions` entry. Keep one Dockerfile: don't accept VS's per-project generated Dockerfiles.
+
 **Local hot reload:** stop the app containers first, because they use the same ports (`docker compose stop web api realtime worker`). Then:
 ```bash
-docker compose up -d --wait postgres redis
+docker compose up -d --wait redis
 dotnet test Marketplace.slnx
 dotnet run --project src/Marketplace.Api
 ```
 Check `http://localhost:5080/health/ready` (should return `Healthy`) and `/v1/modules`. If Docker reports that `dockerDesktopLinuxEngine` can't be found, start Docker Desktop and wait for `docker info` to succeed. To see what's applied, run `docker compose logs api | Select-String Migrated`, or query one module's history:
-`docker exec marketplace-postgres-1 psql -U marketplace -d marketplace -c "SELECT * FROM auctions.__ef_migrations_history"`
+`psql -h localhost -U marketplace -d marketplace -c "SELECT * FROM auctions.__ef_migrations_history"`
 
 ### Add a module
 ```bash
@@ -144,14 +151,14 @@ Add a static `Endpoints/<Name>Endpoints.Map(app)` and call it from the module's 
 - **Auth tokens use real time**, not `IClock`. The JWT validator uses the system clock, and a fake test clock would make tokens "not yet valid".
 - **Web hydration:** don't format dates or times during SSR in client components (server time zone ≠ browser). Use `components/LocalTime.tsx`, and `Countdown` renders "…" until mounted.
 - **Handlers are internal**, so the outbox processor calls them through the `IIntegrationEventHandler<T>` interface by reflection. Don't use `dynamic` across assemblies.
-- **EF Core design time:** `dotnet ef` uses the module's internal `<Name>DbContextFactory` (`ConnectionStrings__Postgres` from the environment or the root `.env`). Adding a migration needs no database; `database update` does. The Api is the startup project because it references `Microsoft.EntityFrameworkCore.Design`.
+- **EF Core design time:** `dotnet ef` uses the module's internal `<Name>DbContextFactory`, which reads `ConnectionStrings:Postgres` from the Api's `appsettings.json` + `appsettings.Development.json`, then the environment. Adding a migration needs no database; `database update` does. The Api is the startup project because it references `Microsoft.EntityFrameworkCore.Design`.
 - `UseNetTopologySuite()` makes every module's migration ensure the `postgis` extension (idempotent). Don't add `HasPostgresExtension("postgis")` yourself.
 - Each module has its own `__ef_migrations_history` in its schema, so migration names only need to be unique within a module.
 - **Central package management vs templates:** `dotnet new xunit` (and other templates) write `Version=` on PackageReference. With CPM on, that fails with NU1008. Move the version into `Directory.Packages.props`.
 - **Don't name a type `Modules`** anywhere under `Marketplace.*`, because it collides with the `Marketplace.Modules` namespace. That's why the catalogue is `ModuleCatalog`.
 - `Microsoft.AspNetCore.OpenApi` 10.0.0 pulled a vulnerable `Microsoft.OpenApi`. Keep ASP.NET packages on the latest 10.0.x patch (`dotnet list package --outdated`).
 - `dotnet new` on .NET 10 creates `.slnx` solutions and auto-adds new projects to a solution in the current folder.
-- Configuration in compose comes from environment variables (`ConnectionStrings__Postgres`, `Cors__Origins__0`, `API_URL`). Inside the network, use service names (`postgres`, `api:8080`), never `localhost`.
+- Configuration in compose comes from environment variables (`ConnectionStrings__Postgres`, `Cors__Origins__0`, `API_URL`). Inside the network, use service names (`redis`, `api:8080`), never `localhost`. Postgres is on the host: `host.docker.internal`. If containers can't connect, check the host's `listen_addresses` and `pg_hba.conf`.
 - The NuGet cache mount in the `Dockerfile` needs `sharing=locked`. Parallel compose builds corrupt a shared cache otherwise.
 - The web image uses `npm ci`, so update `web/package-lock.json` whenever `package.json` changes. Without local Node, run: `docker run --rm -v "${PWD}/web:/app" -w /app node:22-alpine npm install --package-lock-only`.
 - The Testing environment has no connection string. `NpgsqlDataSource` is resolved lazily, so only code that touches the database needs it.

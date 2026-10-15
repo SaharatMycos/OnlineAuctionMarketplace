@@ -1,5 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <!-- Visual Studio container tooling: compose service "worker", shared root Dockerfile. -->
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+    <DockerfileFile>..\..\Dockerfile</DockerfileFile>
+    <DockerfileContext>..\..</DockerfileContext>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Marketplace.Bootstrap\Marketplace.Bootstrap.csproj" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" PrivateAssets="all" />
   </ItemGroup>
 </Project>

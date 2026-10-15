@@ -31,6 +31,10 @@ public class PersistenceTests
     /// <summary>Builds the context the same way dotnet ef does, through the module's design-time factory.</summary>
     private static ModuleDbContext CreateDbContext(IModule module)
     {
+        // The factory needs a connection string to build options, but nothing here connects.
+        if (Environment.GetEnvironmentVariable("ConnectionStrings__Postgres") is null)
+            Environment.SetEnvironmentVariable("ConnectionStrings__Postgres", "Host=localhost;Database=model_only");
+
         var contextType = DbContextType(module);
         var factoryInterface = typeof(IDesignTimeDbContextFactory<>).MakeGenericType(contextType);
         var factoryType = Assert.Single(module.GetType().Assembly.GetTypes(), t => factoryInterface.IsAssignableFrom(t) && !t.IsAbstract);

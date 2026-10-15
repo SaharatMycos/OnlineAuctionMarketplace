@@ -13,4 +13,5 @@ mockup/
 web/
 **/*.user
 **/appsettings.Local.json
+**/appsettings.Development.json
 .env

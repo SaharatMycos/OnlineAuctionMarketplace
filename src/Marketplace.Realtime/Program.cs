@@ -1,11 +1,9 @@
 using Marketplace.Bootstrap;
 using Marketplace.Realtime;
 using Marketplace.SharedKernel.Auth;
-using Marketplace.SharedKernel.Configuration;
 using Marketplace.SharedKernel.Health;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
-DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMarketplace(builder.Configuration);

@@ -3,11 +3,9 @@ using System.Text.Json.Serialization;
 using Marketplace.Api;
 using Marketplace.Bootstrap;
 using Marketplace.SharedKernel.Auth;
-using Marketplace.SharedKernel.Configuration;
 using Marketplace.SharedKernel.Health;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
-DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMarketplace(builder.Configuration);

@@ -10,6 +10,7 @@ Specification and design drafts for a **location-first**, multi-mode (C2C, B2C, 
 | [04 Project setup](04-project-setup.md) | How the codebase was created, step by step: toolchain, scaffold commands, code layout, Docker, verification, Claude Code skill |
 | [05 Architecture, design and structure](05-architecture.md) | How the system is shaped and why: context and container diagrams, modules and how they talk, data/consistency/security design, repository and in-module structure, naming conventions, and the **23 principles** used, with trade-offs |
 | [06 Web frontend (Next.js)](06-web-frontend.md) | How `web/` is set up: App Router structure, BFF proxy and cookies, runtime config, SignalR, running with Docker or `next dev`, from-scratch steps, Docker image, recipes and gotchas |
+| [07 ER diagram](07-er-diagram.md) | Current database schema per module, generated from the EF Core model snapshots: tables, keys, real FKs versus cross-module references, outbox/inbox, privacy columns |
 
 ## Key decisions so far
 - **Location-first:** "Near you" by default, with radius, distance, map and pickup promoted. Exact addresses are private.

@@ -128,7 +128,7 @@ Delete the template files (`Class1.cs`, `UnitTest1.cs`, the template `Worker.cs`
 | 3.6 | `src/Marketplace.Realtime/` | SignalR `AuctionHub` at `/hubs/auctions`, health checks, CORS with credentials, port 5081 |
 | 3.7 | `src/Marketplace.Worker/` | `OutboxRelay` background service (stub) |
 | 3.8 | `tests/…` | Architecture tests (no module→module references, unique lowercase names, first migration creates the module's own schema, migrations only touch their own schema) and API smoke tests (environment `Testing`, no database) |
-| 3.9 | `docker-compose.yml` | `postgis/postgis:17-3.5`, `redis:7.4-alpine`, `opensearchproject/opensearch:2.19.1` (profile `search`) |
+| 3.9 | `docker-compose.yml` | `redis:7.4-alpine` and `opensearchproject/opensearch:2.19.1` (profile `search`). It originally also ran `postgis/postgis:17-3.5`; that service was removed on 2026-10-12 (see the note under Phase 5). |
 | 3.10 | `.gitattributes`, `.gitignore` additions, `README.md` | Housekeeping |
 
 ## Phase 4: Web app
@@ -152,7 +152,7 @@ docker run --rm -v "${PWD}/web:/app" -w /app node:22-alpine npm install --packag
 | `Dockerfile` (root) | Multi-stage build: `sdk:10.0` publish, then `aspnet:10.0` runtime as a non-root user on port 8080. One recipe for all three hosts via `--build-arg PROJECT=Marketplace.Api` (or Realtime, Worker). The NuGet cache mount uses `sharing=locked`; without it, compose's parallel builds failed with "Could not find file …/npgsql/…". |
 | `.dockerignore` (root) | Keeps `bin/`, `obj/`, `web/`, `docs/`, `mockup/` and `.git/` out of the .NET build context |
 | `web/Dockerfile`, `web/.dockerignore` | `node:22-alpine` with `npm ci`, `next build` (`output: "standalone"` in `next.config.ts`) and a `node server.js` runtime as the `node` user |
-| `docker-compose.yml` | Adds `api`, `realtime`, `worker` and `web` next to postgres/redis. Settings come from environment variables: `ConnectionStrings__Postgres` (`Host=postgres`), `Database__MigrateOnStartup` (api only), `Cors__Origins__0` and `API_URL=http://api:8080`. |
+| `docker-compose.yml` | Adds `api`, `realtime`, `worker` and `web` next to redis (Postgres runs outside compose). Settings come from environment variables: `ConnectionStrings__Postgres` (`Host=${POSTGRES_HOST_FROM_DOCKER}`, default `host.docker.internal`), `Database__MigrateOnStartup` (api only), `Cors__Origins__0` and `API_URL=http://api:8080`. |
 
 ## Phase 5: Verify
 
@@ -161,8 +161,10 @@ dotnet test Marketplace.slnx
 ```
 
 ```bash
-docker compose up -d --wait postgres redis
+docker compose up -d --wait redis
 ```
+
+> Since 2026-10-12, Postgres runs natively on the host, not in compose. The api creates the database itself (EF Core, code-first) and applies the migrations on startup. Only the integration tests use a PostGIS container (Testcontainers).
 
 ```bash
 dotnet run --project src/Marketplace.Api

@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "api": "StartDebugging",
+        "realtime": "StartDebugging",
+        "worker": "StartDebugging",
+        "web": "StartWithoutDebugging",
+        "redis": "StartWithoutDebugging",
+        "opensearch": "DoNotStart"
+      }
+    }
+  }
+}

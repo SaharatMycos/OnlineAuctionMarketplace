@@ -102,7 +102,16 @@ winget install Git.Git
 
 ## Run everything in Docker
 
-You only need Docker Desktop. After creating `.env` (`pwsh -File scripts/init-env.ps1`), this builds and starts web, api, realtime, worker, Postgres (with PostGIS) and Redis:
+Postgres is **not** a container. It runs natively on your machine, and only the integration tests start a throwaway PostGIS container. Set it up once:
+
+1. Install PostgreSQL and PostGIS for the same version. On Windows, use the EDB installer, then Stack Builder → Spatial Extensions → PostGIS.
+2. Create `.env`: `pwsh -File scripts/init-env.ps1`
+3. Point `.env` at an **existing** Postgres login. The script fills `POSTGRES_PASSWORD` with a random value and keeps `POSTGRES_USER=marketplace`, and no such login exists in your Postgres yet. Either set `POSTGRES_USER` and `POSTGRES_PASSWORD` to a login you have (for local development, the `postgres` superuser and the password you chose at install), or create a `marketplace` login with that password and `CREATEDB` rights. Then re-run `pwsh -File scripts/init-env.ps1` so the hosts' `appsettings.Development.json` pick up the change.
+4. Nothing else. The database is code-first: on startup the api creates the database if it's missing and applies every module's EF Core migrations, including the `postgis` extension. That's why the login must be allowed to create databases and extensions.
+
+To use a Postgres on another server instead, set `POSTGRES_HOST` (used by `dotnet run`, then rerun `init-env.ps1`) and `POSTGRES_HOST_FROM_DOCKER` (used by compose) in `.env` to that server's name or IP.
+
+Then this builds and starts web, api, realtime, worker and Redis. By default the app containers reach your machine's Postgres at `host.docker.internal:5432`:
 
 ```bash
 docker compose up -d --build
@@ -114,7 +123,8 @@ docker compose up -d --build
 | api | http://localhost:5080 | root `Dockerfile`, `PROJECT=Marketplace.Api`. Applies migrations on start. |
 | realtime | http://localhost:5081 (hub `/hubs/auctions`) | root `Dockerfile`, `PROJECT=Marketplace.Realtime` |
 | worker | no port | root `Dockerfile`, `PROJECT=Marketplace.Worker` |
-| postgres / redis | localhost:5432 / 6379 | `postgis/postgis:17-3.5`, `redis:7.4-alpine` |
+| redis | localhost:6379 | `redis:7.4-alpine` |
+| postgres (host, not Docker) | localhost:5432 | your local PostgreSQL + PostGIS |
 
 Useful commands:
 
@@ -130,16 +140,20 @@ docker compose up -d --build api
 docker compose down
 ```
 
-Add `-v` to `docker compose down` to also delete the database volume. Add `--profile search` to `up` to also start OpenSearch.
+`docker compose down` never touches your data, because the database lives in your local Postgres. Add `--profile search` to `up` to also start OpenSearch.
 
-Inside compose, the apps reach each other by service name: the web app calls `http://api:8080`, and the .NET hosts use `Host=postgres`. Those settings come from environment variables in `docker-compose.yml`, which override `appsettings*.json`. Secrets in `docker-compose.yml` are `${...}` references to `.env`; compose stops with a clear message if one is missing.
+Inside compose, the apps reach each other by service name (the web app calls `http://api:8080`), and the .NET hosts use `Host=$POSTGRES_HOST_FROM_DOCKER` (default `host.docker.internal`) for Postgres. If the api logs "connection refused" or "no pg_hba.conf entry", make sure Postgres listens beyond localhost (`listen_addresses = '*'`) and that `pg_hba.conf` allows the address Docker connects from, then restart the Postgres service. Those settings come from environment variables in `docker-compose.yml`, which override `appsettings*.json`. Secrets in `docker-compose.yml` are `${...}` references to `.env`; compose stops with a clear message if one is missing.
+
+### Debug the containers in Visual Studio
+
+Open `Marketplace.slnx`, choose **Docker Compose** as the startup item and press F5. `docker-compose.dcproj` and `Properties/launchSettings.json` start web and Redis, and run api, realtime and worker in their containers under the debugger. Visual Studio's fast mode reuses the `base` stage of the root `Dockerfile`. To change which services are debugged, use **Manage Docker Compose Launch Settings**. The dotnet CLI ignores the `.dcproj`.
 
 ## Run locally (hot reload)
 
-Start only the infrastructure. If the app containers are running, stop them first with `docker compose stop web api realtime worker`, because they use the same ports.
+Make sure the local Postgres service is running (on Windows, `Get-Service postgresql*`), then start Redis. If the app containers are running, stop them first with `docker compose stop web api realtime worker`, because they use the same ports.
 
 ```bash
-docker compose up -d postgres redis
+docker compose up -d redis
 ```
 
 Build and test (the integration tests start a throwaway PostGIS container, so Docker must be running):
@@ -177,12 +191,18 @@ Check:
 
 ## Configuration
 
-- **Secrets live only in `.env`** (git-ignored, and kept out of Docker images by `.dockerignore`). [`.env.example`](.env.example) is the committed template, and `scripts/init-env.ps1` copies it with random values for `POSTGRES_PASSWORD`, `REDIS_PASSWORD` and `AUTH_SIGNING_KEY`. Use `-Force` to regenerate it.
-  - **docker compose** reads `.env` automatically for the `${...}` references in `docker-compose.yml`.
-  - **`dotnet run` and `dotnet ef`** load it through `DotEnv.Load()` (`Marketplace.SharedKernel/Configuration/DotEnv.cs`). That provides `ConnectionStrings__Postgres`, `ConnectionStrings__Redis` and `Auth__SigningKey` for localhost.
-  - Real environment variables always win, so production sets them from a secret store and has no `.env`.
-  - `appsettings*.json` contain no secrets. The integration tests use their own throwaway container credentials.
-- **Changing `POSTGRES_PASSWORD` with an existing database volume:** Postgres only reads it when the volume is first created. Either reset the volume with `docker compose down -v`, which deletes the data, or set it on the running database: `docker compose exec postgres psql -U marketplace -d marketplace -c "ALTER USER marketplace PASSWORD '<new>'"`.
+- **Standard .NET configuration.** Settings are read in this order, and each later source overrides the earlier ones:
+  1. `appsettings.json` (committed, no secrets)
+  2. `appsettings.Development.json` (git-ignored, real local values)
+  3. environment variables
+- **Creating the secrets:** `pwsh -File scripts/init-env.ps1` does both of these:
+  - Creates `.env` from [`.env.example`](.env.example) with random `POSTGRES_PASSWORD`, `REDIS_PASSWORD` and `AUTH_SIGNING_KEY`. Docker compose reads it for the `${...}` references in `docker-compose.yml`.
+  - Writes each host's `appsettings.Development.json` (connection strings, signing key and dev settings) from those values.
+
+  Change values in `.env` and re-run the script, because it regenerates the JSON files. `-Force` makes new secrets. Both files are git-ignored and kept out of Docker images by `.dockerignore`.
+- **`dotnet ef`** reads `src/Marketplace.Api/appsettings*.json` (see `ModuleDesignTimeFactory`).
+- Production has neither file. It sets environment variables from a secret store. The integration tests use their own throwaway container credentials.
+- **Changing `POSTGRES_USER` or `POSTGRES_PASSWORD`:** set them in `.env` to an existing Postgres login, then re-run `init-env.ps1`. Nothing changes passwords inside Postgres.
 - `Database:MigrateOnStartup` controls whether the api applies pending EF Core migrations. Only the api runs them, and an advisory lock prevents races.
 - `Auth:SigningKey` signs the dev JWTs. `Auth:DevTokens` turns on `POST /v1/dev/token`, which signs in as any email. Both are on only in Development and compose; replace them with a real identity provider before launch.
 - `ConnectionStrings:Redis` is used by the worker (publish) and realtime (subscribe). Redis requires `REDIS_PASSWORD`.

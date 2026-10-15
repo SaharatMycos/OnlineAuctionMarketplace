@@ -1,4 +1,7 @@
 <Solution>
+ <Project Path="docker-compose.dcproj">
+   <Build />
+ </Project>
   <Folder Name="/src/">
     <Project Path="src/Marketplace.Api/Marketplace.Api.csproj" />
     <Project Path="src/Marketplace.Realtime/Marketplace.Realtime.csproj" />

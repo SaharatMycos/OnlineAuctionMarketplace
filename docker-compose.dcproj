@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Visual Studio only: makes "Docker Compose" a launch target. The dotnet CLI skips this project.
+     Launch profiles (which services to debug) live in Properties/launchSettings.json next to it. -->
+<Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <ProjectGuid>{6D1F3A2C-8B4E-4F0A-9C57-2E1B7A9D4C31}</ProjectGuid>
+    <DockerServiceName>api</DockerServiceName>
+    <DockerServiceUrl>http://localhost:5080/health/ready</DockerServiceUrl>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="docker-compose.yml" />
+    <None Include=".dockerignore" />
+    <None Include="Dockerfile" />
+  </ItemGroup>
+</Project>

@@ -108,7 +108,7 @@ docker compose up -d --build web
 ### Option B: `next dev` with hot reload, backend in Docker
 Requires Node 22 LTS (`winget install OpenJS.NodeJS.LTS`).
 ```bash
-docker compose up -d postgres redis api realtime worker
+docker compose up -d redis api realtime worker
 ```
 ```bash
 cd web
