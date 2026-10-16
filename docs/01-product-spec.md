@@ -135,6 +135,7 @@ A single, **location-first** auction marketplace where **consumers, businesses a
 
 | Date | Decision | Why | Where |
 |---|---|---|---|
+| 2026-10-15 | Store listing photo bytes in PostgreSQL; use our Marketplace.Media interface with an internal SkiaSharp engine | Keep local persistence in the existing database and allow the image engine to be replaced | Feature design §2.1 |
 | 2026-10-09 | Three trading modes (C2C, B2C, B2B) on one bidding engine, released in 3 phases | Shared engine and trust layer; B2C/C2C first for liquidity | §1, §4 |
 | 2026-10-09 | **No escrow and no in-app payment** in the MVP | Simpler and avoids payment licensing. Escrow via a PSP is a possible later upgrade. | §2, [Feature design §6.3](02-feature-design.md#63-later-escrow-via-a-psp) |
 | 2026-10-09 | **Deal agreement after every win**: fixed price + handover/payment terms. Both sides accept, pay outside the app, both confirm "Deal paid", then the buyer marks Received. | A written record both parties accept, and a stronger signal than a buyer-only "paid" | §4, [Feature design §6](02-feature-design.md#6-deal-agreement-and-settlement) |
@@ -150,6 +151,7 @@ A single, **location-first** auction marketplace where **consumers, businesses a
 
 ## Change log
 
+- **Photo uploads (2026-10-15):** Sellers upload and arrange up to 24 photos before publishing; processed JPEG bytes live in PostgreSQL.
 - **Code (2026-10-09):** MVP core loop implemented: dev sign-in, location-first feed and search, listings, English auctions with proxy bidding, soft close, Buy Now and the close job, deal agreement flow, live updates, web pages.
 
 - **v0.2 (2026-10-09):** location-first discovery, deal agreement instead of in-app payment (escrow removed), modular-monolith decision, consistency pass across all three docs.

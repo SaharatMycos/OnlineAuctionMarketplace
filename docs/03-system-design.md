@@ -23,7 +23,7 @@ A **modular monolith**: one codebase and one database, with strict module bounda
  └──────────────┬───────────────────────────────────────────┘
                 │ transactional outbox → event bus
    PostgreSQL (system of record) · Redis (live state, pub/sub, rate limits)
-   OpenSearch (search) · Object storage + CDN (media) · Job scheduler
+   OpenSearch (search) · PostgreSQL bytea (listing media; object storage/CDN deferred) · Job scheduler
    External: KYC vendor, fee billing (card on file), carriers, email/SMS/push, fraud scoring
    (Later: marketplace PSP if escrow is added)
 ```

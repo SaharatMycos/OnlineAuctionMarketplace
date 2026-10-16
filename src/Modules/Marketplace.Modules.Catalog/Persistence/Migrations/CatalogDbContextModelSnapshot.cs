@@ -254,6 +254,60 @@ namespace Marketplace.Modules.Catalog.Persistence.Migrations
                     b.ToTable("listing", "catalog");
                 });
 
+            modelBuilder.Entity("Marketplace.Modules.Catalog.Domain.ListingPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<Guid?>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listing_id");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_id");
+
+                    b.Property<DateTimeOffset>("UnattachedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unattached_at");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_listing_photo");
+
+                    b.HasIndex("ListingId")
+                        .HasDatabaseName("ix_listing_photo_listing_id");
+
+                    b.HasIndex("UnattachedAt", "Id")
+                        .HasDatabaseName("ix_listing_photo_unattached_at_id")
+                        .HasFilter("listing_id IS NULL");
+
+                    b.ToTable("listing_photo", "catalog");
+                });
+
             modelBuilder.Entity("Marketplace.SharedKernel.Outbox.InboxMessage", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -328,6 +382,15 @@ namespace Marketplace.Modules.Catalog.Persistence.Migrations
                         .HasConstraintName("fk_listing_category_category_id");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Marketplace.Modules.Catalog.Domain.ListingPhoto", b =>
+                {
+                    b.HasOne("Marketplace.Modules.Catalog.Domain.Listing", null)
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_listing_photo_listing_listing_id");
                 });
 #pragma warning restore 612, 618
         }

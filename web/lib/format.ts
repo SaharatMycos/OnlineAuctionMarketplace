@@ -47,3 +47,8 @@ export const paymentLabel: Record<string, string> = {
   mobileQr: "Mobile / QR payment",
   other: "Other",
 };
+
+/** API-relative media paths (/v1/...) load through the BFF proxy; external URLs pass through. */
+export function mediaUrl(url: string) {
+  return url.startsWith("/v1/") ? `/api/proxy${url}` : url;
+}

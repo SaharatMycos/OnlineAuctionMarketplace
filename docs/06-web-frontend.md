@@ -221,3 +221,9 @@ Events for the signed-in user (`user.outbid`, `user.won`, `order.updated`) arriv
 - **Don't import `lib/api.ts` in a client component.** `next/headers` fails at build time.
 
 Related: [04 Project setup](04-project-setup.md) · [05 Architecture](05-architecture.md) · [03 System design](03-system-design.md)
+
+## Listing photo uploads
+
+On `/sell`, select **Choose images from your device** to open the local file picker. Multiple images can be selected together. This is the single visible upload control; the native file input is hidden and activated by the button.
+
+The sell form uploads files sequentially through the BFF, retaining successful IDs when publication fails. Sellers can preview, reorder, remove and retry individual photos; the first photo becomes the cover. Publication waits for successful uploads. The proxy forwards binary bodies and image responses without text conversion. Tokens stay in httpOnly cookies. The API returns API-relative /v1/listing-photos/{id} photo URLs; the web maps them to same-origin /api/proxy paths (mediaUrl in web/lib/format.ts), which work for both draft owners and public listing viewers.

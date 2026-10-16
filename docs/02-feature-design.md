@@ -45,6 +45,9 @@ Sellers can also require "verified bidders only", a minimum feedback score, or a
 ## 2. Listings
 
 ### 2.1 Listing creation [P1]
+
+**Implemented photo uploads (2026-10-15):** Up to 24 optional JPEG/PNG/WebP files, 10 MiB and 40 megapixels each. Sellers preview, retry, remove and reorder before publication; the first image is the cover. The server applies orientation, resizes to a maximum 2,048-pixel edge without upscaling, flattens transparency to white and re-encodes JPEG at quality 85 without source metadata. Original files are not retained. Draft/unattached images are seller-only; published and ended images are public. Published photos cannot be edited. Unattached uploads expire after 24 hours; attached draft images do not.
+
 - Guided flow: category → title → photos (up to 24, plus video in P2) → item specifics (category-driven attributes) → condition → description → **item location + delivery options** (pickup / shipping, see §9.2) → format and pricing → shipping → returns → preview.
 - **Smart assist:** suggested category and title from photos, a price guide from comparable sold items, and a missing-info checklist.
 - Drafts autosave. Listings can be scheduled to start at a set time.

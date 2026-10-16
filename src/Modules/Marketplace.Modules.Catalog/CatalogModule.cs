@@ -1,3 +1,5 @@
+using Marketplace.Media;
+using Marketplace.SharedKernel.Jobs;
 using Marketplace.Modules.Auctions.Contracts;
 using Marketplace.Modules.Catalog.Application;
 using Marketplace.Modules.Catalog.Contracts;
@@ -22,9 +24,15 @@ public sealed class CatalogModule : IModule
     public void AddServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddModuleDbContext<CatalogDbContext>(Schema);
+        services.AddMarketplaceMedia();
+        services.AddBackgroundJob<ExpireListingPhotos>();
         services.AddScoped<IListingQueries, ListingQueries>();
         services.AddIntegrationEventHandler<AuctionClosed, EndListingOnAuctionClosed>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) => CatalogEndpoints.Map(endpoints);
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        CatalogEndpoints.Map(endpoints);
+        PhotoEndpoints.Map(endpoints);
+    }
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deliveryLabel, distance, money } from "@/lib/format";
+import { deliveryLabel, distance, mediaUrl, money } from "@/lib/format";
 import type { Card } from "@/lib/types";
 import Countdown from "./Countdown";
 
@@ -7,7 +7,7 @@ export default function ListingCard({ card }: { card: Card }) {
   return (
     <Link href={`/item/${card.listingId}`} className="card">
       <div className="thumb" aria-hidden>
-        {card.thumbnailUrl ? <img src={card.thumbnailUrl} alt="" /> : <span>{card.emoji}</span>}
+        {card.thumbnailUrl ? <img src={mediaUrl(card.thumbnailUrl)} alt="" /> : <span>{card.emoji}</span>}
       </div>
       <div className="card-body">
         <div className="card-title">{card.title}</div>

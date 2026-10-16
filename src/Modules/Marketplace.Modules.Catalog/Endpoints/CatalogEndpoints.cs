@@ -1,3 +1,4 @@
+using Marketplace.Modules.Catalog.Application;
 using Marketplace.Modules.Catalog.Contracts;
 using Marketplace.Modules.Catalog.Domain;
 using Marketplace.Modules.Catalog.Persistence;
@@ -29,7 +30,8 @@ internal static class CatalogEndpoints
         decimal StartPrice,
         decimal? ReservePrice,
         decimal? BuyNowPrice,
-        int DurationMinutes);
+        int DurationMinutes,
+        List<Guid>? PhotoIds = null);
 
     public sealed record CreateListingRequest(ListingInput Listing, LocationInput Location, bool Publish = false);
 
@@ -103,6 +105,8 @@ internal static class CatalogEndpoints
             CreatedAt = clock.UtcNow,
         };
         Apply(listing, request.Listing, category.Id);
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await ListingPhotos.ApplyAsync(db, listing, request.Listing.PhotoIds, request.Listing.PhotoUrls, clock.UtcNow, ct);
         listing.Validate();
 
         var loc = request.Location;
@@ -114,32 +118,39 @@ internal static class CatalogEndpoints
         if (request.Publish)
             Publish(db, listing, category, clock);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         await db.Entry(listing).Reference(l => l.Category).LoadAsync(ct);
         return Results.Created($"/v1/listings/{listing.Id}", ToResponse(listing, isMine: true));
     }
 
-    private static async Task<ListingResponse> UpdateListing(Guid id, ListingInput input, CatalogDbContext db, ICurrentUser current, CancellationToken ct)
+    private static async Task<ListingResponse> UpdateListing(Guid id, ListingInput input, CatalogDbContext db, ICurrentUser current, IClock clock, CancellationToken ct)
     {
-        var listing = await db.Listings.SingleOrDefaultAsync(l => l.Id == id, ct) ?? throw ProblemException.NotFound("Listing");
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var listing = (await db.Listings.FromSql($"SELECT * FROM catalog.listing WHERE id = {id} FOR UPDATE").ToListAsync(ct)).SingleOrDefault() ?? throw ProblemException.NotFound("Listing");
         listing.EnsureEditableBy(current.RequireId());
         if (!await db.Categories.AnyAsync(c => c.Id == input.CategoryId, ct))
             throw ProblemException.BadRequest("invalid_category", "Pick a category.");
         Apply(listing, input, input.CategoryId);
+        await ListingPhotos.ApplyAsync(db, listing, input.PhotoIds, input.PhotoUrls, clock.UtcNow, ct);
         listing.Validate();
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         await db.Entry(listing).Reference(l => l.Category).LoadAsync(ct);
         return ToResponse(listing, isMine: true);
     }
 
     private static async Task<ListingResponse> PublishListing(Guid id, CatalogDbContext db, ICurrentUser current, IClock clock, CancellationToken ct)
     {
-        var listing = await db.Listings.Include(l => l.Category).SingleOrDefaultAsync(l => l.Id == id, ct)
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var listing = (await db.Listings.FromSql($"SELECT * FROM catalog.listing WHERE id = {id} FOR UPDATE").ToListAsync(ct)).SingleOrDefault()
             ?? throw ProblemException.NotFound("Listing");
+        await db.Entry(listing).Reference(l => l.Category).LoadAsync(ct);
         if (listing.SellerId != current.RequireId())
             throw ProblemException.Forbidden("not_seller", "Only the seller can publish this listing.");
         Publish(db, listing, listing.Category!, clock);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return ToResponse(listing, isMine: true);
     }
 
@@ -174,7 +185,9 @@ internal static class CatalogEndpoints
         listing.Title = input.Title?.Trim() ?? "";
         listing.Description = input.Description?.Trim() ?? "";
         listing.Condition = string.IsNullOrWhiteSpace(input.Condition) ? "Used" : input.Condition.Trim();
-        listing.PhotoUrls = input.PhotoUrls?.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u.Trim()).ToList() ?? [];
+        // Omitted photo fields keep the current photos (see ListingPhotos.ApplyAsync).
+        if (input.PhotoUrls is not null || input.PhotoIds is not null)
+            listing.PhotoUrls = input.PhotoUrls?.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u.Trim()).ToList() ?? [];
         listing.Specs = input.Specs?.Where(kv => !string.IsNullOrWhiteSpace(kv.Key)).ToDictionary(kv => kv.Key.Trim(), kv => kv.Value?.Trim() ?? "") ?? [];
         listing.Delivery = input.Delivery;
         listing.ShippingCost = input.Delivery == DeliveryOption.Pickup ? null : input.ShippingCost ?? 0;

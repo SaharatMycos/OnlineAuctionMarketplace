@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../Marketplace.Media/Marketplace.Media.csproj" />
     <ProjectReference Include="..\..\Marketplace.SharedKernel\Marketplace.SharedKernel.csproj" />
     <ProjectReference Include="..\Marketplace.Modules.Catalog.Contracts\Marketplace.Modules.Catalog.Contracts.csproj" />
     <ProjectReference Include="..\Marketplace.Modules.Location.Contracts\Marketplace.Modules.Location.Contracts.csproj" />

@@ -409,3 +409,9 @@ Rules inside a module (clean / hexagonal):
 | How the repo was built, including the Docker setup | [04 Project setup](04-project-setup.md) |
 
 Change this document together with the code whenever a structure or principle changes, and add the reason to the product spec's decision log.
+
+## Listing media (2026-10-15)
+
+Catalog owns catalog.listing_photo, including processed image bytes (bytea), seller ownership and optional listing attachment. PostgreSQL backups therefore include media. Image bytes are not loaded by listing or search queries. Marketplace.Media is an independent reusable library exposing IImageProcessor and ProcessedImage; SkiaSharp and its native types stay internal to the implementation. The API and Linux containers use the same processing rules.
+
+Upload POST /v1/listing-photos accepts one multipart file and returns an ID, API-relative URL (/v1/listing-photos/{id}) and dimensions. Listing input accepts ordered photoIds or legacy external photoUrls, never both nonempty; a draft update may also send back its own attached photo URLs, and omitting both fields keeps the current photos. Attachment locks uploaded rows and commits with the listing. GET /v1/listing-photos/{id} enforces visibility before loading bytes and marks public photos cacheable (owner-only drafts stay no-store); DELETE only removes the caller's unattached uploads. The worker's catalog.expire_photos job removes expired unattached uploads in bounded batches. Requests/responses through the web BFF preserve binary data.

@@ -79,9 +79,13 @@ internal sealed class Listing
             throw ProblemException.BadRequest("invalid_shipping_cost", "Shipping cost can't be negative.");
         if (!AllowedDurationsMinutes.Contains(DurationMinutes))
             throw ProblemException.BadRequest("invalid_duration", "Pick 5 min, 1 h, or 1, 3, 5, 7 or 10 days.");
-        if (PhotoUrls.Count > 24 || PhotoUrls.Any(u => !Uri.TryCreate(u, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")))
+        if (PhotoUrls.Count > 24 || PhotoUrls.Any(u => !IsPhotoUrl(u)))
             throw ProblemException.BadRequest("invalid_photos", "Up to 24 photo URLs (http or https).");
     }
+
+    private static bool IsPhotoUrl(string value) =>
+        ListingPhoto.TryParseUrl(value, out _) ||
+        (Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http");
 
     /// <summary>Links the listing to its (private) item location, keeping only the public-grade point and area.</summary>
     public void PlaceAt(Guid locationId, Point publicGeo, string areaName) =>

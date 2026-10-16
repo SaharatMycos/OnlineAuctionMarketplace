@@ -13,6 +13,8 @@ internal sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> option
 {
     public override string Schema => CatalogModule.Schema;
 
+    public DbSet<ListingPhoto> ListingPhotos => Set<ListingPhoto>();
+
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Listing> Listings => Set<Listing>();
 }
@@ -71,5 +73,20 @@ internal sealed class ListingConfiguration : IEntityTypeConfiguration<Listing>
         e.Property(l => l.BuyNowPrice).HasPrecision(12, 2);
         e.Property(l => l.ShippingCost).HasPrecision(12, 2);
         e.HasIndex(l => new { l.SellerId, l.CreatedAt });
+    }
+}
+
+internal sealed class ListingPhotoConfiguration : IEntityTypeConfiguration<ListingPhoto>
+{
+    public void Configure(EntityTypeBuilder<ListingPhoto> e)
+    {
+        e.ToTable("listing_photo");
+        e.HasKey(p => p.Id);
+        e.Property(p => p.Id).ValueGeneratedNever();
+        e.Property(p => p.Content).HasColumnType("bytea");
+        e.Property(p => p.ContentType).HasMaxLength(40);
+        e.HasOne<Listing>().WithMany().HasForeignKey(p => p.ListingId).OnDelete(DeleteBehavior.Cascade);
+        e.HasIndex(p => p.ListingId);
+        e.HasIndex(p => new { p.UnattachedAt, p.Id }).HasFilter("listing_id IS NULL");
     }
 }

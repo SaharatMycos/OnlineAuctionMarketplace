@@ -1,0 +1,333 @@
+<div id="upload-process-sim">
+  <style>
+    #upload-process-sim {
+      --ups-fg: var(--foreground, #1f2328);
+      --ups-muted: var(--muted-foreground, #5d6670);
+      --ups-border: var(--border, #d4d9df);
+      --ups-surface: var(--card, #ffffff);
+      --ups-bg: var(--background, #f6f8fa);
+      --ups-accent: var(--viz-series-1, #2563eb);
+      --ups-danger: var(--destructive, #c62828);
+      color: var(--ups-fg);
+      font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      max-width: 980px;
+      container-type: inline-size;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    @media (prefers-color-scheme: dark) {
+      #upload-process-sim {
+        --ups-fg: var(--foreground, #e6e8eb);
+        --ups-muted: var(--muted-foreground, #9aa4ae);
+        --ups-border: var(--border, #3a424b);
+        --ups-surface: var(--card, #1c2127);
+        --ups-bg: var(--background, #12161b);
+        --ups-accent: var(--viz-series-1, #6ea8fe);
+        --ups-danger: var(--destructive, #ff6b6b);
+      }
+    }
+    #upload-process-sim * { box-sizing: border-box; }
+    #upload-process-sim h2 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    #upload-process-sim .lede { color: var(--ups-muted); margin: 0 0 12px; }
+    #upload-process-sim .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+    #upload-process-sim button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--ups-border); background: var(--ups-surface); color: var(--ups-fg); padding: 6px 12px; }
+    #upload-process-sim button:disabled { opacity: .45; cursor: default; }
+    #upload-process-sim button.primary { background: var(--ups-accent); border-color: var(--ups-accent); color: #fff; }
+    #upload-process-sim button:focus-visible { outline: 2px solid var(--ups-accent); outline-offset: 2px; }
+    #upload-process-sim .counter { color: var(--ups-muted); font-variant-numeric: tabular-nums; }
+
+    /* Component diagram */
+    #upload-process-sim .diagram { border: 1px solid var(--ups-border); border-radius: 12px; background: var(--ups-bg); padding: 8px; }
+    #upload-process-sim svg { display: block; width: 100%; height: auto; }
+    #upload-process-sim .module rect { fill: none; stroke: var(--ups-border); stroke-width: 1.2; stroke-dasharray: 4 3; }
+    #upload-process-sim .module:not(.active) { opacity: .6; }
+    #upload-process-sim .module.active rect { stroke: color-mix(in srgb, var(--ups-accent) 55%, var(--ups-border)); }
+    #upload-process-sim .module-label { font-size: 10.5px; fill: var(--ups-muted); paint-order: stroke; stroke: var(--ups-bg); stroke-width: 4px; stroke-linejoin: round; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    #upload-process-sim .module.active .module-label { fill: var(--ups-accent); }
+    #upload-process-sim .node rect { fill: var(--ups-surface); stroke: var(--ups-border); stroke-width: 1.5; transition: stroke .2s, fill .2s; }
+    #upload-process-sim .node .title { font-size: 13px; font-weight: 600; fill: var(--ups-fg); }
+    #upload-process-sim .node .sub { font-size: 11px; fill: var(--ups-muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    #upload-process-sim .node.active rect { stroke: var(--ups-accent); stroke-width: 2.5; fill: color-mix(in srgb, var(--ups-accent) 12%, var(--ups-surface)); }
+    #upload-process-sim .node.error rect { stroke: var(--ups-danger); stroke-width: 2.5; fill: color-mix(in srgb, var(--ups-danger) 12%, var(--ups-surface)); }
+    #upload-process-sim .node.dim { opacity: .55; }
+    #upload-process-sim .link { stroke: var(--ups-border); stroke-width: 1.5; fill: none; }
+    #upload-process-sim .flowline { stroke: var(--ups-accent); stroke-width: 2.5; fill: none; stroke-dasharray: 7 5; animation: ups-dash 0.9s linear infinite; }
+    #upload-process-sim .flowline.error { stroke: var(--ups-danger); }
+    #upload-process-sim .arrow { fill: var(--ups-accent); }
+    #upload-process-sim .arrow.error { fill: var(--ups-danger); }
+    #upload-process-sim .label { font-size: 11px; font-weight: 600; fill: var(--ups-fg); paint-order: stroke; stroke: var(--ups-bg); stroke-width: 5px; stroke-linejoin: round; }
+    #upload-process-sim .step-num circle { fill: var(--ups-accent); stroke: var(--ups-bg); stroke-width: 2; }
+    #upload-process-sim .step-num text { font-size: 10px; font-weight: 700; fill: #fff; font-variant-numeric: tabular-nums; }
+    @keyframes ups-dash { to { stroke-dashoffset: -12; } }
+    @media (prefers-reduced-motion: reduce) { #upload-process-sim .flowline { animation: none; } }
+
+    /* Workflow */
+    #upload-process-sim .workflow { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+    #upload-process-sim ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+    #upload-process-sim ol.steps li { counter-increment: step; }
+    #upload-process-sim ol.steps button { width: 100%; text-align: left; border: 0; border-left: 3px solid var(--ups-border); border-radius: 0; background: none; padding: 6px 10px; color: var(--ups-muted); }
+    #upload-process-sim ol.steps button::before { content: counter(step) ". "; font-variant-numeric: tabular-nums; }
+    #upload-process-sim ol.steps button.done { color: var(--ups-fg); border-left-color: color-mix(in srgb, var(--ups-accent) 45%, var(--ups-border)); }
+    #upload-process-sim ol.steps button.current { color: var(--ups-fg); font-weight: 600; border-left-color: var(--ups-accent); background: color-mix(in srgb, var(--ups-accent) 10%, transparent); }
+    #upload-process-sim .card { border: 1px solid var(--ups-border); border-radius: 12px; background: var(--ups-surface); padding: 16px; min-width: 0; }
+    #upload-process-sim .card h3 { font-size: 16px; font-weight: 600; margin: 0; }
+    #upload-process-sim .head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+    #upload-process-sim .num-badge { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 999px; background: var(--ups-accent); color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    #upload-process-sim .badge { font-size: 12px; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--ups-accent); color: var(--ups-accent); }
+    #upload-process-sim code.req { display: block; font-size: 12px; background: var(--ups-bg); border: 1px solid var(--ups-border); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; white-space: pre-wrap; margin: 8px 0; }
+    #upload-process-sim .detail { margin: 8px 0; overflow-wrap: anywhere; }
+    #upload-process-sim .detail.error { color: var(--ups-danger); }
+    #upload-process-sim table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 13px; }
+    #upload-process-sim th, #upload-process-sim td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--ups-border); overflow-wrap: anywhere; }
+    #upload-process-sim th { color: var(--ups-muted); font-weight: 500; }
+    #upload-process-sim .state { display: inline-block; font-size: 12px; border-radius: 6px; padding: 1px 8px; background: var(--ups-bg); border: 1px solid var(--ups-border); }
+    #upload-process-sim .state.ok { border-color: var(--ups-accent); color: var(--ups-accent); }
+    #upload-process-sim .state.bad { border-color: var(--ups-danger); color: var(--ups-danger); }
+    #upload-process-sim .publish { color: var(--ups-muted); font-size: 13px; }
+    #upload-process-sim [hidden] { display: none !important; }
+    @container (max-width: 640px) {
+      #upload-process-sim .workflow { grid-template-columns: 1fr; }
+      /* Narrow: the step list becomes a strip of numbered buttons. */
+      #upload-process-sim ol.steps { display: flex; flex-wrap: wrap; gap: 6px; }
+      #upload-process-sim ol.steps button { width: 32px; height: 32px; padding: 0; border: 1px solid var(--ups-border); border-radius: 999px; font-size: 0; text-align: center; }
+      #upload-process-sim ol.steps button::before { content: counter(step); font-size: 13px; }
+      #upload-process-sim ol.steps button.done { border-color: var(--ups-accent); }
+      #upload-process-sim ol.steps button.current { background: var(--ups-accent); border-color: var(--ups-accent); color: #fff; }
+    }
+  </style>
+
+  <h2>Listing photo upload</h2>
+  <p class="lede">Components on top, workflow below. Step through to see which parts take part and where each photo stands.</p>
+
+  <div class="diagram">
+    <svg data-diagram role="img" aria-label="Component diagram: seller and buyer browsers, Next.js BFF proxy, Catalog API, image processor, PostgreSQL and worker"></svg>
+  </div>
+
+  <div class="controls">
+    <button type="button" data-action="back">Previous</button>
+    <button type="button" class="primary" data-action="next">Next step</button>
+    <span class="counter" data-step></span>
+  </div>
+
+  <div class="workflow">
+    <ol class="steps" data-steps aria-label="Workflow steps"></ol>
+    <div class="card" aria-live="polite">
+      <div class="head"><span class="num-badge" data-num aria-hidden="true"></span><h3 data-title></h3><span class="badge" data-visibility></span></div>
+      <code class="req" data-req></code>
+      <p class="detail" data-detail></p>
+      <table aria-label="Simulated upload queue">
+        <thead><tr><th>Local file</th><th>Photo state</th><th>Server ID</th></tr></thead>
+        <tbody>
+          <tr><td>bicycle.png · cover</td><td data-first-status></td><td data-first-id></td></tr>
+          <tr><td>camera.png</td><td data-second-status></td><td data-second-id></td></tr>
+        </tbody>
+      </table>
+      <div class="controls">
+        <button type="button" data-action="fail" hidden>Simulate camera upload failure</button>
+        <button type="button" data-action="retry" hidden>Retry camera upload</button>
+        <span class="publish" data-publish></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('upload-process-sim');
+      const q = (selector) => root.querySelector(selector);
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const W = 160, H = 68;
+
+      const nodes = {
+        seller: { title: 'Seller browser', module: 'web · browser', sub: ['SellForm', 'PhotoUploader'] },
+        buyer: { title: 'Buyer browser', module: 'web · browser', sub: ['item page', 'ListingCard'] },
+        bff: { title: 'Next.js BFF', module: 'web · Next.js server', sub: ['/api/proxy/[...path]', 'adds Bearer token'] },
+        api: { title: 'Catalog API', module: 'Modules.Catalog', sub: ['PhotoEndpoints', 'ListingPhotos'] },
+        media: { title: 'Image processor', module: 'Marketplace.Media', sub: ['SkiaImageProcessor', 'Marketplace.Media'] },
+        db: { title: 'PostgreSQL', module: 'PostgreSQL · catalog', sub: ['catalog.listing_photo', 'listing · outbox'] },
+        worker: { title: 'Worker', module: 'Marketplace.Worker', sub: ['outbox relay', 'expire_photos job'] },
+      };
+      const links = [['seller', 'bff'], ['buyer', 'bff'], ['bff', 'api'], ['api', 'media'], ['api', 'db'], ['worker', 'db']];
+      const layouts = {
+        // Seller → BFF → API → DB is the main pipeline; the buyer, processor and worker hang off it.
+        wide: { w: 1002, h: 328, at: { seller: [16, 40], bff: [286, 40], api: [556, 40], db: [826, 40], buyer: [286, 240], media: [556, 240], worker: [826, 240] } },
+        narrow: { w: 408, h: 532, at: { seller: [14, 30], bff: [14, 170], api: [14, 310], db: [14, 450], buyer: [234, 170], media: [234, 310], worker: [234, 450] } },
+      };
+
+      const steps = [
+        { title: 'Choose local files', nodes: ['seller'], flows: [], first: 'Selected', second: 'Selected', visibility: 'On your device',
+          req: '<input type="file" multiple accept="image/jpeg,image/png,image/webp">',
+          detail: 'The picker gives the page access only to the files you select. Nothing leaves the device yet.' },
+        { title: 'Validate and preview', nodes: ['seller'], flows: [], first: 'Waiting', second: 'Waiting', visibility: 'On your device',
+          req: 'URL.createObjectURL(file)  // local blob preview',
+          detail: 'PhotoUploader checks JPEG / PNG / WebP, non-empty, at most 10 MiB each and at most 24 photos. A preview does not mean the file is uploaded.' },
+        { title: 'Upload bicycle.png', nodes: ['seller', 'bff', 'api'], flows: [['seller', 'bff', 'multipart'], ['bff', 'api', '+ token']], first: 'Uploading…', second: 'Waiting', visibility: 'Uploading privately',
+          req: 'POST /api/proxy/v1/listing-photos  →  POST /v1/listing-photos',
+          detail: 'The BFF route catches /api/proxy/*, reads the token from the httpOnly cookie and forwards the bytes. It rejects bodies over 10 MiB + 64 KiB before buffering more; the API enforces its own limit too.' },
+        { title: 'Check and process the image', nodes: ['api', 'media'], flows: [['api', 'media', 'process']], first: 'Uploading…', second: 'Waiting', visibility: 'Processing privately',
+          req: 'IImageProcessor.ProcessAsync(stream)',
+          detail: 'Validates the real image bytes (not the MIME type): rejects corrupt, animated or >40 MP images. JPEG/WebP are downsampled while decoding; EXIF orientation is applied, the longest edge is capped at 2048 px and the result is re-encoded as JPEG without original metadata.' },
+        { title: 'Save the first photo', nodes: ['api', 'db', 'bff', 'seller'], flows: [['api', 'db', 'INSERT'], ['api', 'bff', '201'], ['bff', 'seller', 'id, url']], first: 'Unattached', second: 'Waiting', visibility: 'Seller only',
+          req: '201 { id: "photo-A", url: "/v1/listing-photos/photo-A", width, height }',
+          detail: 'One catalog.listing_photo row stores the JPEG bytes, dimensions and seller ID with listing_id = NULL. The URL is API-relative; the web prefixes /api/proxy when displaying it. "photo-A" stands in for a UUID.' },
+        { title: 'Upload camera.png next', nodes: ['seller', 'bff', 'api', 'media'], flows: [['seller', 'bff', 'multipart'], ['bff', 'api', '+ token'], ['api', 'media', 'process']], first: 'Unattached', second: 'Uploading…', visibility: 'Seller only', canFail: true,
+          req: 'POST /api/proxy/v1/listing-photos  (one file per request)',
+          detail: 'Uploads run one at a time. The camera goes through the same checks; the bicycle is not uploaded again.' },
+        { title: 'Both photos ready', nodes: ['seller'], flows: [], first: 'Unattached', second: 'Unattached', visibility: 'Seller only',
+          req: 'DELETE /v1/listing-photos/{id}  // only if you remove one',
+          detail: 'Reorder or remove photos; the first is the cover. Removing an uploaded photo deletes the unattached row. "Open auction" is enabled once every selected photo is uploaded.' },
+        { title: 'Publish the listing', nodes: ['seller', 'bff', 'api', 'db'], flows: [['seller', 'bff', 'POST'], ['bff', 'api', '+ token'], ['api', 'db', 'lock · attach']], first: 'Attached', second: 'Attached', visibility: 'Public after commit',
+          req: 'POST /v1/listings { listing: { …, photoIds: ["photo-A", "photo-B"] }, publish: true }',
+          detail: 'ListingPhotos locks the photo rows (IDs only, no image bytes), checks they belong to the seller and are unattached, then sets listing_id. The listing, photo links and the ListingPublished outbox event commit in one transaction.' },
+        { title: 'Relay the publish event', nodes: ['worker', 'db'], flows: [['worker', 'db', 'outbox']], first: 'Attached', second: 'Attached', visibility: 'Public',
+          req: 'ListingPublished { …, coverPhotoUrl: "/v1/listing-photos/photo-A" }',
+          detail: 'The worker relays the outbox event. Search indexes the cover URL as the card thumbnail, so listing cards show the first photo.' },
+        { title: 'A buyer views the listing', nodes: ['buyer', 'bff', 'api', 'db'], flows: [['buyer', 'bff', 'GET'], ['bff', 'api', 'forward'], ['api', 'db', 'bytes']], first: 'Public', second: 'Public', visibility: 'Public',
+          req: 'mediaUrl("/v1/listing-photos/photo-A")  →  GET /api/proxy/v1/listing-photos/photo-A',
+          detail: 'The API checks visibility in SQL before loading bytes: the seller, or anyone once the listing is not a draft. Public photos return Cache-Control: public, max-age=86400; draft photos stay private, no-store.' },
+        { title: 'Clean up abandoned uploads', nodes: ['worker', 'db'], flows: [['worker', 'db', 'DELETE']], first: 'Public', second: 'Public', visibility: 'Background',
+          req: 'catalog.expire_photos  // hourly, batches of 100',
+          detail: 'Uploads left unattached for more than 24 hours (never used, or removed from a draft) are deleted. Attached photos like these two are never touched.' },
+      ];
+      const last = steps.length - 1;
+      const failFlows = [['seller', 'bff', 'multipart'], ['bff', 'api', '+ token'], ['api', 'media', 'rejected'], ['bff', 'seller', '400']];
+
+      const saved = window.openai?.widgetState?.modelContent;
+      let step = Number.isInteger(saved?.step) ? Math.max(0, Math.min(last, saved.step)) : 0;
+      let failed = steps[step].canFail === true && saved?.failed === true;
+      const persist = () => { window.openai?.setWidgetState?.({ modelContent: { step, failed }, privateContent: null })?.catch?.(() => {}); };
+
+      const el = (name, attrs, parent) => {
+        const node = document.createElementNS(svgNS, name);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+        if (parent) parent.appendChild(node);
+        return node;
+      };
+      // Point where the line from a box's centre toward (tx, ty) leaves the box.
+      const edgePoint = ([x, y], tx, ty, pad = 4) => {
+        const cx = x + W / 2, cy = y + H / 2, dx = tx - cx, dy = ty - cy;
+        const s = Math.min((W / 2 + pad) / Math.abs(dx || 1e-9), (H / 2 + pad) / Math.abs(dy || 1e-9));
+        return [cx + dx * s, cy + dy * s];
+      };
+      const segment = (layout, from, to) => {
+        const a = layout.at[from], b = layout.at[to];
+        const p = edgePoint(a, b[0] + W / 2, b[1] + H / 2), r = edgePoint(b, a[0] + W / 2, a[1] + H / 2, 8);
+        return { x1: p[0], y1: p[1], x2: r[0], y2: r[1] };
+      };
+
+      const svg = q('[data-diagram]');
+      let layoutName = '';
+      function drawDiagram() {
+        const layout = layouts[layoutName];
+        const s = steps[step];
+        const flows = failed ? failFlows : s.flows;
+        svg.replaceChildren();
+        svg.setAttribute('viewBox', `0 0 ${layout.w} ${layout.h}`);
+        const defs = el('defs', {}, svg);
+        for (const kind of ['', 'error']) {
+          const marker = el('marker', { id: 'ups-arrow' + kind, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+          el('path', { d: 'M0,0 L10,5 L0,10 z', class: 'arrow ' + kind }, marker);
+        }
+        for (const [a, b] of links) el('line', { ...segment(layout, a, b), class: 'link' }, svg);
+        const labels = [];
+        for (const [from, to, text] of flows) {
+          const isError = failed && (text === 'rejected' || text === '400');
+          const seg = segment(layout, from, to);
+          el('line', { ...seg, class: 'flowline' + (isError ? ' error' : ''), 'marker-end': `url(#ups-arrow${isError ? 'error' : ''})` }, svg);
+          // Offset the label when a response travels back along the same link.
+          const back = flows.some(([f, t]) => f === to && t === from) && from > to ? 14 : 0;
+          labels.push([(seg.x1 + seg.x2) / 2, (seg.y1 + seg.y2) / 2 + back - 4, text, labels.length + 1]);
+        }
+        // Module wrap: the project or process each component lives in.
+        for (const [id, node] of Object.entries(nodes)) {
+          const [x, y] = layout.at[id];
+          const wrap = el('g', { class: 'module' + (s.nodes.includes(id) ? ' active' : '') }, svg);
+          el('rect', { x: x - 10, y: y - 24, width: W + 20, height: H + 34, rx: 12 }, wrap);
+          el('text', { x: x - 2, y: y - 9, class: 'module-label' }, wrap).textContent = node.module;
+        }
+        for (const [id, node] of Object.entries(nodes)) {
+          const [x, y] = layout.at[id];
+          const isError = failed && (id === 'api' || id === 'media');
+          const state = isError ? 'error' : s.nodes.includes(id) || (failed && id === 'seller') || (failed && id === 'bff') ? 'active' : 'dim';
+          const g = el('g', { class: 'node ' + state }, svg);
+          el('rect', { x, y, width: W, height: H, rx: 10 }, g);
+          el('text', { x: x + 12, y: y + 22, class: 'title' }, g).textContent = node.title;
+          node.sub.forEach((line, i) => { el('text', { x: x + 12, y: y + 40 + i * 15, class: 'sub' }, g).textContent = line; });
+        }
+        // Number each arrow in the order it happens within the step.
+        for (const [x, y, text, n] of labels) {
+          const label = el('text', { x, y, 'text-anchor': 'middle', class: 'label' }, svg);
+          label.textContent = text;
+          const cx = x - label.getComputedTextLength() / 2 - 12;
+          const badge = el('g', { class: 'step-num' }, svg);
+          el('circle', { cx, cy: y - 4, r: 8 }, badge);
+          el('text', { x: cx, y: y - 0.5, 'text-anchor': 'middle' }, badge).textContent = n;
+        }
+      }
+
+      const list = q('[data-steps]');
+      steps.forEach((s, i) => {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = s.title;
+        button.onclick = () => { step = i; failed = false; render(); persist(); };
+        li.appendChild(button);
+        list.appendChild(li);
+      });
+
+      const stateClass = (text) => /fail/i.test(text) ? 'bad' : /Unattached|Attached|Public/.test(text) ? 'ok' : '';
+      function setState(selector, text) {
+        const cell = q(selector);
+        cell.replaceChildren();
+        const span = document.createElement('span');
+        span.className = 'state ' + stateClass(text);
+        span.textContent = text;
+        cell.appendChild(span);
+      }
+
+      function render() {
+        const s = steps[step];
+        q('[data-step]').textContent = `Step ${step + 1} of ${steps.length}`;
+        q('[data-num]').textContent = String(step + 1);
+        q('[data-title]').textContent = failed ? 'Camera upload failed' : s.title;
+        q('[data-visibility]').textContent = s.visibility;
+        q('[data-req]').textContent = failed ? '400 { code: "invalid_photo", detail: "The image is incomplete or corrupt." }' : s.req;
+        q('[data-detail]').textContent = failed
+          ? 'The bicycle stays uploaded. Retry the camera or remove it; publishing stays blocked while a selected photo has failed.'
+          : s.detail;
+        q('[data-detail]').classList.toggle('error', failed);
+        setState('[data-first-status]', s.first);
+        setState('[data-second-status]', failed ? 'Failed · retry available' : s.second);
+        q('[data-first-id]').textContent = step >= 4 ? 'photo-A' : '—';
+        q('[data-second-id]').textContent = step >= 6 ? 'photo-B' : '—';
+        q('[data-publish]').textContent = step < 6 ? 'Publishing blocked until every selected photo is uploaded' : step === 6 ? 'Ready to publish once the listing fields are complete' : 'Listing published';
+        q('[data-action="back"]').disabled = step === 0;
+        q('[data-action="next"]').disabled = step === last || failed;
+        q('[data-action="fail"]').hidden = !s.canFail || failed;
+        q('[data-action="retry"]').hidden = !failed;
+        list.querySelectorAll('button').forEach((button, i) => {
+          button.className = i === step ? 'current' : i < step ? 'done' : '';
+          if (i === step) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
+        });
+        drawDiagram();
+      }
+
+      q('[data-action="next"]').onclick = () => { if (step < last && !failed) { step++; render(); persist(); } };
+      q('[data-action="back"]').onclick = () => { if (step > 0) { step--; failed = false; render(); persist(); } };
+      q('[data-action="fail"]').onclick = () => { failed = true; render(); persist(); };
+      q('[data-action="retry"]').onclick = () => { failed = false; render(); persist(); };
+      window.addEventListener('openai:set_globals', (event) => {
+        const state = event.detail?.globals?.widgetState?.modelContent;
+        if (state && Number.isInteger(state.step)) { step = Math.max(0, Math.min(last, state.step)); failed = steps[step].canFail === true && state.failed === true; render(); }
+      });
+
+      const pickLayout = () => {
+        const next = root.clientWidth < 600 ? 'narrow' : 'wide';
+        if (next !== layoutName) { layoutName = next; drawDiagram(); }
+      };
+      new ResizeObserver(pickLayout).observe(root);
+      layoutName = root.clientWidth < 600 ? 'narrow' : 'wide';
+      render();
+    })();
+  </script>
+</div>

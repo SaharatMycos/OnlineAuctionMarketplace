@@ -12,7 +12,7 @@ export class ProblemError extends Error {
 /** Browser-side api call through the /api/proxy BFF route (adds the token server-side). */
 export async function callApi<T>(path: string, init?: RequestInit & { idempotencyKey?: string }): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (init?.body) headers["Content-Type"] = "application/json";
+  if (init?.body && !(init.body instanceof FormData)) headers["Content-Type"] = "application/json";
   if (init?.idempotencyKey) headers["Idempotency-Key"] = init.idempotencyKey;
 
   const res = await fetch(`/api/proxy${path}`, { ...init, headers: { ...headers, ...(init?.headers as object) } });

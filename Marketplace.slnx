@@ -4,6 +4,7 @@
  </Project>
   <Folder Name="/src/">
     <Project Path="src/Marketplace.Api/Marketplace.Api.csproj" />
+    <Project Path="src/Marketplace.Media/Marketplace.Media.csproj" />
     <Project Path="src/Marketplace.Realtime/Marketplace.Realtime.csproj" />
     <Project Path="src/Marketplace.Worker/Marketplace.Worker.csproj" />
     <Project Path="src/Marketplace.Bootstrap/Marketplace.Bootstrap.csproj" />
@@ -30,6 +31,7 @@
     <Project Path="tests/Marketplace.ArchitectureTests/Marketplace.ArchitectureTests.csproj" />
     <Project Path="tests/Marketplace.Api.Tests/Marketplace.Api.Tests.csproj" />
     <Project Path="tests/Marketplace.IntegrationTests/Marketplace.IntegrationTests.csproj" />
+    <Project Path="tests/Marketplace.Media.Tests/Marketplace.Media.Tests.csproj" />
     <Project Path="tests/Marketplace.UnitTests/Marketplace.UnitTests.csproj" />
   </Folder>
 </Solution>

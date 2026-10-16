@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import PhotoUploader from "@/components/PhotoUploader";
 import { callApi, ProblemError } from "@/lib/client";
 import type { Category, Delivery, Listing, Place } from "@/lib/types";
 
@@ -26,7 +27,6 @@ export default function SellForm({ categories, places }: { categories: Category[
     title: "",
     description: "",
     condition: "Used, good",
-    photoUrls: "",
     specs: "",
     placeId: areas[0]?.id ?? 1,
     address: "",
@@ -40,6 +40,9 @@ export default function SellForm({ categories, places }: { categories: Category[
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [photoIds, setPhotoIds] = useState<string[]>([]);
+  const [photosBlocked, setPhotosBlocked] = useState(false);
+  const onPhotosChange = useCallback((ids: string[], blocked: boolean) => { setPhotoIds(ids); setPhotosBlocked(blocked); }, []);
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [key]: e.target.value });
@@ -53,6 +56,7 @@ export default function SellForm({ categories, places }: { categories: Category[
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy || photosBlocked) return;
     setError("");
     setBusy(true);
     const num = (v: string) => (v.trim() === "" ? null : Number(v));
@@ -72,7 +76,7 @@ export default function SellForm({ categories, places }: { categories: Category[
             title: form.title,
             description: form.description,
             condition: form.condition,
-            photoUrls: form.photoUrls.split(/\s+/).filter(Boolean),
+            photoIds,
             specs,
             delivery: form.delivery,
             shippingCost: form.delivery === "pickup" ? null : num(form.shippingCost) ?? 0,
@@ -124,10 +128,7 @@ export default function SellForm({ categories, places }: { categories: Category[
           Item specifics <span className="muted small">(one per line, e.g. “Brand: Trek”)</span>
           <textarea className="input" rows={3} value={form.specs} onChange={set("specs")} />
         </label>
-        <label>
-          Photo URLs <span className="muted small">(optional, space-separated; uploads come later)</span>
-          <input className="input" value={form.photoUrls} onChange={set("photoUrls")} />
-        </label>
+        <PhotoUploader disabled={busy} onChange={onPhotosChange} />
       </fieldset>
 
       <fieldset>
@@ -199,7 +200,7 @@ export default function SellForm({ categories, places }: { categories: Category[
       </fieldset>
 
       {error && <p className="error">{error}</p>}
-      <button className="btn primary wide" disabled={busy}>{busy ? "Opening…" : "Open auction"}</button>
+      <button className="btn primary wide" disabled={busy || photosBlocked}>{busy ? "Opening…" : "Open auction"}</button>
     </form>
   );
 }

@@ -255,3 +255,7 @@ erDiagram
 The `"private"` columns must never appear in a public response: `location.item_location.address` and `.geo`, `catalog.listing.reserve_price`, `auctions.auction.leader_max` and `auctions.bid.max_amount` (only the bidder's own). Public screens use `public_geo` and `area_name`.
 
 Related: [03 System design](03-system-design.md) · [05 Architecture](05-architecture.md)
+
+## Listing photos (2026-10-15)
+
+Catalog now also owns listing_photo: id (UUID PK), seller_id (cross-module identity reference), listing_id (nullable FK to catalog.listing.id, cascading on deletion), created_at, unattached_at, content_type, width, height and content (bytea). An index on listing_id supports visibility/attachment checks; a partial index on unattached_at and id covers unattached-photo expiration. Ordered display URLs remain on listing.photo_urls; photo bytes never enter search projections.

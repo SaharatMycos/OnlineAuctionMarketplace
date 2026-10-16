@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { apiOrNull, getSessionUser } from "@/lib/api";
 import { REALTIME_PUBLIC_URL } from "@/lib/config";
-import { deliveryLabel, money } from "@/lib/format";
+import { deliveryLabel, mediaUrl, money } from "@/lib/format";
 import type { Auction, BidHistoryItem, Listing } from "@/lib/types";
 import BidPanel from "./BidPanel";
 
@@ -19,9 +19,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="item">
       <div className="item-main">
-        <div className="gallery" aria-hidden>
+        <div className="gallery" aria-label="Item photos">
           {listing.photoUrls.length > 0 ? (
-            listing.photoUrls.map((u) => <img key={u} src={u} alt="" />)
+            listing.photoUrls.map((u, index) => <img key={u} src={mediaUrl(u)} alt={listing.title + ", photo " + (index + 1)} />)
           ) : (
             <span className="big-emoji">{listing.category.emoji}</span>
           )}

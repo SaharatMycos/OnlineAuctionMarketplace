@@ -12,3 +12,6 @@ export const COOKIE_LOCATION = "mp_loc";
 
 /** Demo default: Chicago, 25 km (feature design §9.1). */
 export const DEFAULT_LOCATION = { lat: 41.8781, lng: -87.6298, area: "Chicago, IL", radiusKm: 25 as number | null };
+
+/** Matches the API's ImageLimits.MaxBytes. */
+export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;

@@ -12,12 +12,12 @@ A location-first, multi-mode (C2C, B2C, B2B) auction marketplace. "Bidly" is a p
 Status: **MVP core loop works end to end**:
 1. Sign in (dev).
 2. Set your location and browse "Near you", with search, radius and delivery filters.
-3. List an item with a private address.
+3. List an item with a private address and upload and arrange photos, stored in PostgreSQL.
 4. Bid live with proxy bidding and soft close, or use Buy Now.
 5. The auction closes, which creates a deal agreement.
 6. Both parties accept, both confirm payment, then the buyer marks the item received.
 
-Deferred: fixed price and offers, watchlist and saved searches, notifications by email or push, reviews and problem reports, admin, fees, map view, photo uploads and a real identity provider.
+Deferred: fixed price and offers, watchlist and saved searches, notifications by email or push, reviews and problem reports, admin, fees, map view, a real identity provider.
 
 ## Try it in 2 minutes
 
@@ -222,3 +222,7 @@ dotnet ef migrations add AddAuctionAndBid --project src/Modules/Marketplace.Modu
 ```
 
 The api applies pending migrations on its next start. If you forget the migration, `dotnet test` fails and prints the command to run.
+
+## Listing photos
+
+Photo uploads need no additional service or storage configuration. The API's next migration creates catalog.listing_photo in PostgreSQL; database backups include the image bytes. Originals and GPS metadata are discarded. Draft photos are private to the seller, while published photos are public. The worker removes uploads left unattached for more than 24 hours. Run the standalone image-processing checks with dotnet test tests/Marketplace.Media.Tests.
