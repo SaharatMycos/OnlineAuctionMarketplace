@@ -37,6 +37,10 @@ export default function BidPanel({ initialAuction, initialBids, signedIn, realti
   const c = auction.currency;
   const live = auction.status === "live";
   const you = auction.you;
+  const highestBidSeq = bids.reduce(
+    (seq, bid) => bid.amount === auction.currentPrice ? Math.max(seq, bid.seq) : seq,
+    -1,
+  );
 
   const refresh = useCallback(async () => {
     const [a, b] = await Promise.all([
@@ -119,6 +123,21 @@ export default function BidPanel({ initialAuction, initialBids, signedIn, realti
     }
   }
 
+  async function cancelAuction() {
+    if (!confirm("Cancel this auction? There will be no winner or sale. This cannot be undone.")) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const updated = await callApi<Auction>(`/v1/auctions/${auction.id}/cancel`, { method: "POST" });
+      setAuction((current) => updated.seq >= current.seq ? updated : current);
+    } catch (e) {
+      try { await refresh(); } catch { /* Keep the original cancellation error visible. */ }
+      setMessage({ kind: "error", text: e instanceof ProblemError ? e.message : "Cancellation failed. Try again." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function buyNow() {
     if (!confirm(`Buy now for ${money(auction.buyNowPrice, c)}? This is binding.`)) return;
     setBusy(true);
@@ -137,7 +156,7 @@ export default function BidPanel({ initialAuction, initialBids, signedIn, realti
       {live ? (
         <>
           <div className="small muted">Current bid · {auction.bidCount} {auction.bidCount === 1 ? "bid" : "bids"}</div>
-          <div className="big-price tnum">{money(auction.currentPrice, c)}</div>
+          <div className={`big-price tnum${auction.bidCount > 0 ? " highest-bid-amount" : ""}`}>{money(auction.currentPrice, c)}</div>
           <div className={`small${extendedFlash ? " flash" : ""}`}>
             Ends in <strong><Countdown endsAt={auction.endsAt} offsetMs={offsetMs} /></strong>
             {extendedFlash && <span className="badge time"> Extended: bid in the last 2 minutes</span>}
@@ -151,7 +170,12 @@ export default function BidPanel({ initialAuction, initialBids, signedIn, realti
           {auction.leader && <div className="small muted">Highest bidder: {auction.leader}</div>}
 
           {you?.isSeller ? (
-            <p className="note">This is your auction. You can&apos;t bid on it.</p>
+            <div className="note">
+              <p>This is your auction. You can&apos;t bid on it.</p>
+              <button className="btn wide" disabled={busy || !you.canCancel} onClick={cancelAuction}>Cancel auction</button>
+              <p className="small muted">You can cancel before the auction ends while fewer than two different bidders have placed bids. Cancellation creates no sale.</p>
+              {!you.canCancel && <p className="small muted">Cancellation is unavailable: the auction has ended or two different bidders have placed bids.</p>}
+            </div>
           ) : !signedIn ? (
             <Link className="btn wide" href={`/signin?next=/item/${auction.listingId}`}>Sign in to bid</Link>
           ) : (
@@ -214,7 +238,7 @@ export default function BidPanel({ initialAuction, initialBids, signedIn, realti
         </>
       ) : (
         <>
-          <div className="small muted">{auction.status === "sold" ? "Sold for" : "Ended"}</div>
+          <div className="small muted">{auction.status === "cancelled" ? "Cancelled — no sale" : auction.status === "sold" ? "Sold for" : "Ended"}</div>
           <div className="big-price tnum">
             {auction.status === "sold" ? money(auction.finalPrice, c) : "No sale"}
           </div>
@@ -237,7 +261,10 @@ export default function BidPanel({ initialAuction, initialBids, signedIn, realti
           {bids.map((b) => (
             <li key={b.seq}>
               <span>{b.bidder}{b.kind === "proxy" && <span className="muted small"> (auto)</span>}{b.kind === "buynow" && <span className="muted small"> (Buy Now)</span>}</span>
-              <span className="tnum">{money(b.amount, c)}</span>
+              <span className={`tnum${live && b.seq === highestBidSeq ? " highest-bid-amount" : ""}`}>
+                {live && b.seq === highestBidSeq && <span className="small">Highest bid · </span>}
+                {money(b.amount, c)}
+              </span>
               <span className="muted small"><LocalTime value={b.at} /></span>
             </li>
           ))}

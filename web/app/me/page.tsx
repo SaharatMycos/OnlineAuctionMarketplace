@@ -7,7 +7,7 @@ import type { Listing, MyBidding, OrderSummary } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const standingLabel = { winning: "Winning", outbid: "Outbid", won: "Won", lost: "Lost" };
+const standingLabel = { winning: "Winning", outbid: "Outbid", won: "Won", lost: "Lost", cancelled: "Cancelled" };
 
 export default async function MePage() {
   const user = await getSessionUser();

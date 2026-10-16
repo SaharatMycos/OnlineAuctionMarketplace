@@ -106,7 +106,7 @@ section { margin: 28px 0; }
 .btn.danger { color: var(--bad); border-color: var(--bad); }
 .btn.small { padding: 4px 10px; font-size: 0.85rem; }
 .btn.wide { width: 100%; margin-top: 8px; }
-.btn:disabled { opacity: 0.6; cursor: wait; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .link { all: unset; color: var(--accent); cursor: pointer; }
 .link:hover { text-decoration: underline; }
 .chip {
@@ -161,6 +161,7 @@ section { margin: 28px 0; }
 .specs dd { margin: 0; }
 .item-side { position: sticky; top: 76px; }
 .big-price { font-size: 1.9rem; font-weight: 800; }
+.highest-bid-amount { display: inline-block; width: fit-content; padding: 2px 8px; border-radius: 6px; background: var(--good-soft); color: var(--good); font-weight: 800; }
 .good { color: var(--good); }
 .warn { color: var(--warn); }
 .bad { color: var(--bad); }

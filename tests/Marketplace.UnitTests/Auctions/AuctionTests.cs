@@ -12,6 +12,46 @@ public class AuctionTests
     private static Auction NewAuction(decimal start = 10, decimal? reserve = null, decimal? buyNow = null, TimeSpan? length = null) =>
         Auction.Start(Guid.NewGuid(), Seller, "seller", "Trek FX 3", "USD", start, reserve, buyNow, T0, T0 + (length ?? TimeSpan.FromDays(1)));
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Cancellation_has_no_sale_and_is_idempotent(int bidders)
+    {
+        var auction = NewAuction(buyNow: 100);
+        if (bidders == 1)
+            auction.PlaceBid(A, "alice", 50, T0);
+        var seq = auction.LastSeq;
+        Assert.True(auction.CanCancel(bidders, T0));
+        Assert.True(auction.Cancel(Seller, bidders, T0));
+        Assert.Equal(AuctionStatus.Cancelled, auction.Status);
+        Assert.Equal("seller_cancelled", auction.CloseReason);
+        Assert.Equal(T0, auction.ClosedAt);
+        Assert.Null(auction.WinnerId);
+        Assert.Null(auction.FinalPrice);
+        Assert.Equal(seq + 1, auction.LastSeq);
+        Assert.False(auction.Cancel(Seller, bidders, T0));
+        Assert.Equal(seq + 1, auction.LastSeq);
+        Assert.False(auction.Close(T0.AddDays(2)));
+        Assert.Throws<ProblemException>(() => auction.PlaceBid(B, "bob", 60, T0));
+        Assert.Throws<ProblemException>(() => auction.BuyNow(B, "bob", T0));
+        Assert.Throws<ProblemException>(() => auction.Cancel(B, bidders, T0));
+    }
+
+    [Fact]
+    public void Cancellation_rejects_two_bidders_expiry_and_sold_auctions()
+    {
+        var auction = NewAuction(reserve: 100);
+        Assert.False(auction.CanCancel(2, T0));
+        Assert.Throws<ProblemException>(() => auction.Cancel(Seller, 2, T0));
+        Assert.False(auction.CanCancel(0, auction.EndsAt));
+        Assert.Throws<ProblemException>(() => auction.Cancel(Seller, 0, auction.EndsAt));
+        auction.Close(auction.EndsAt);
+        Assert.Throws<ProblemException>(() => auction.Cancel(Seller, 0, auction.EndsAt));
+        var sold = NewAuction(buyNow: 100);
+        sold.BuyNow(A, "alice", T0);
+        Assert.Throws<ProblemException>(() => sold.Cancel(Seller, 1, T0));
+    }
+
     [Fact]
     public void First_bid_leads_at_the_start_price()
     {

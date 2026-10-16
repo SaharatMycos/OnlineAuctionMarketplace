@@ -79,7 +79,7 @@ internal sealed class UpdateCardOnAuctionClosed(SearchDbContext db, IClock clock
         var card = await CardAsync(e.ListingId, ct);
         if (e.Seq < card.LastSeq)
             return;
-        card.Status = e.Sold ? "sold" : "unsold";
+        card.Status = e.Reason == "seller_cancelled" ? "cancelled" : e.Sold ? "sold" : "unsold";
         card.Price = e.FinalPrice ?? card.Price;
         card.BuyNowPrice = null;
         card.LastSeq = e.Seq;

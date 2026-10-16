@@ -121,7 +121,7 @@ The product is location-first ([Feature design §9](02-feature-design.md#9-locat
 ```
 draft → scheduled → live ⇄ (extended) → closing → closed_sold
                      │                        └→ closed_unsold
-                     └→ cancelled (admin/seller before bids, or admin with reason)
+                     └→ cancelled (seller before two distinct accepted bidders; admin cancellation planned)
 ```
 
 **Order**
@@ -197,6 +197,8 @@ Webhooks (Seller API): agreement.created, agreement.accepted, deal.paid, order.r
 - **Added:**
   - `GET /v1/categories`, `GET /v1/listings/{id}`, `PUT /v1/listings/{id}` (drafts) and `GET /v1/me/listings`
   - `GET /v1/auctions/by-listing/{listingId}` and `GET /v1/auctions/{id}/bids` (masked history)
+  - `POST /v1/auctions/{id}/cancel` (seller only, before expiry and before two distinct accepted bidders). Returns the updated auction view; retries by the seller are idempotent. Conflicts use `auction_closed` or `too_many_bidders`; other users receive `not_seller` (403).
+  - Auction views include seller-only eligibility in `you.canCancel`; auction/search status and bidding standing support `cancelled`. Cancellation keeps end times and bid history, records `ClosedAt` and `seller_cancelled`, and publishes the existing `AuctionClosed` contract with no winner or final price. Catalog ends the listing, Search excludes it from live results, and Orders creates no deal. The eligibility check and distinct-bidder query run under the same auction row lock as bidding and Buy Now; the existing string columns require no schema change.
   - `GET /v1/orders/{id}`, `GET /v1/orders/by-auction/{auctionId}`, `POST /v1/orders/{id}/cancel` (seller, non-completion) and `GET /v1/me/orders`
   - `GET /v1/me` and `GET /v1/time`
   - Dev only (`Auth:DevTokens`): `POST /v1/dev/token` and `GET /v1/dev/users`

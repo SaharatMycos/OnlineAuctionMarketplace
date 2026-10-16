@@ -24,19 +24,20 @@ internal static class AuctionEndpoints
         group.MapGet("/auctions/{id:guid}/bids", GetBids);
         group.MapPost("/auctions/{id:guid}/bids", PlaceBid).RequireAuthorization();
         group.MapPost("/auctions/{id:guid}/buy-now", BuyNow).RequireAuthorization();
+        group.MapPost("/auctions/{id:guid}/cancel", Cancel).RequireAuthorization();
         group.MapGet("/me/bidding", GetMyBidding).RequireAuthorization();
     }
 
     private static async Task<AuctionView> GetAuction(Guid id, AuctionsDbContext db, ICurrentUser current, IClock clock, CancellationToken ct)
     {
         var auction = await db.Auctions.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id, ct) ?? throw ProblemException.NotFound("Auction");
-        return AuctionView.From(auction, clock.UtcNow, await YouAsync(db, auction, current.Id, ct));
+        return AuctionView.From(auction, clock.UtcNow, await YouAsync(db, auction, current.Id, clock, ct));
     }
 
     private static async Task<AuctionView> GetAuctionByListing(Guid listingId, AuctionsDbContext db, ICurrentUser current, IClock clock, CancellationToken ct)
     {
         var auction = await db.Auctions.AsNoTracking().SingleOrDefaultAsync(a => a.ListingId == listingId, ct) ?? throw ProblemException.NotFound("Auction");
-        return AuctionView.From(auction, clock.UtcNow, await YouAsync(db, auction, current.Id, ct));
+        return AuctionView.From(auction, clock.UtcNow, await YouAsync(db, auction, current.Id, clock, ct));
     }
 
     /// <summary>Bid history with masked bidders and no maxima (feature design §4.5).</summary>
@@ -62,7 +63,10 @@ internal static class AuctionEndpoints
     private static Task<AuctionView> BuyNow(Guid id, BidService bids, ICurrentUser current, CancellationToken ct) =>
         bids.BuyNowAsync(id, current.RequireId(), current.Handle ?? "buyer", ct);
 
-    /// <summary>The caller's auctions: winning, outbid, won or lost (system design §7).</summary>
+    private static Task<AuctionView> Cancel(Guid id, BidService bids, ICurrentUser current, CancellationToken ct) =>
+        bids.CancelAsync(id, current.RequireId(), ct);
+
+    /// <summary>The caller's auctions: winning, outbid, won, lost or cancelled.</summary>
     private static async Task<List<MyBiddingItem>> GetMyBidding(string? status, AuctionsDbContext db, ICurrentUser current, CancellationToken ct)
     {
         var me = current.RequireId();
@@ -80,6 +84,7 @@ internal static class AuctionEndpoints
             {
                 AuctionStatus.Live => a.LeaderId == me ? "winning" : "outbid",
                 AuctionStatus.ClosedSold when a.WinnerId == me => "won",
+                AuctionStatus.Cancelled => "cancelled",
                 _ => "lost",
             };
             return new MyBiddingItem(a.Id, a.ListingId, a.Title, a.Currency, a.CurrentPrice,
@@ -91,12 +96,13 @@ internal static class AuctionEndpoints
         return items.OrderBy(i => i.AuctionStatus == "live" ? 0 : 1).ThenBy(i => i.EndsAt).ToList();
     }
 
-    private static async Task<YouView?> YouAsync(AuctionsDbContext db, Auction a, Guid? userId, CancellationToken ct)
+    private static async Task<YouView?> YouAsync(AuctionsDbContext db, Auction a, Guid? userId, IClock clock, CancellationToken ct)
     {
         if (userId is not { } me)
             return null;
         if (me == a.SellerId)
-            return new YouView(IsSeller: true, HasBid: false, IsLeader: false, YourMax: null, Won: false);
+            return new YouView(IsSeller: true, HasBid: false, IsLeader: false, YourMax: null, Won: false,
+                CanCancel: a.CanCancel(await db.CountBiddersAsync(a.Id, ct), clock.UtcNow));
 
         var yourMax = await db.Bids.Where(b => b.AuctionId == a.Id && b.BidderId == me).MaxAsync(b => (decimal?)b.MaxAmount, ct);
         var isLeader = a.LeaderId == me;

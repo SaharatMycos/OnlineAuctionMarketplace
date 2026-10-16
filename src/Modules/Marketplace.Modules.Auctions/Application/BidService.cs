@@ -67,6 +67,19 @@ internal sealed class BidService(AuctionsDbContext db, IClock clock)
         return AuctionView.From(auction, now, new YouView(false, true, true, auction.FinalPrice, Won: true));
     }
 
+    public async Task<AuctionView> CancelAsync(Guid auctionId, Guid sellerId, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var auction = await db.LockAuctionAsync(auctionId, ct) ?? throw ProblemException.NotFound("Auction");
+        var bidders = await db.CountBiddersAsync(auctionId, ct);
+        var now = clock.UtcNow;
+        if (auction.Cancel(sellerId, bidders, now))
+            db.Publish(Closed(auction), now);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return AuctionView.From(auction, now, new YouView(true, false, false, null, false));
+    }
+
     public static AuctionClosed Closed(Auction a) => new(
         a.Id, a.ListingId, a.Title, a.SellerId, a.SellerHandle,
         a.Status == AuctionStatus.ClosedSold, a.WinnerId, a.WinnerId is null ? null : a.LeaderHandle,

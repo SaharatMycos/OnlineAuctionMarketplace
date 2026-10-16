@@ -7,6 +7,7 @@ internal enum AuctionStatus
     Live,
     ClosedSold,
     ClosedUnsold,
+    Cancelled,
 }
 
 internal enum BidKind
@@ -185,6 +186,28 @@ internal sealed class Auction
         if (Status != AuctionStatus.Live || now < EndsAt)
             return false;
         CloseAs(sold: LeaderId is not null && ReserveMet, "ended", now);
+        return true;
+    }
+
+    public bool CanCancel(int distinctBidders, DateTimeOffset now) =>
+        Status == AuctionStatus.Live && now < EndsAt && distinctBidders < 2;
+
+    public bool Cancel(Guid actorId, int distinctBidders, DateTimeOffset now)
+    {
+        if (actorId != SellerId)
+            throw ProblemException.Forbidden("not_seller", "Only the seller can cancel this auction.");
+        if (Status == AuctionStatus.Cancelled)
+            return false;
+        if (Status != AuctionStatus.Live || now >= EndsAt)
+            throw ProblemException.Conflict("auction_closed", "This auction has ended.");
+        if (distinctBidders >= 2)
+            throw ProblemException.Conflict("too_many_bidders", "You can't cancel after two different bidders have placed bids.");
+
+        Status = AuctionStatus.Cancelled;
+        (ClosedAt, CloseReason) = (now, "seller_cancelled");
+        WinnerId = null;
+        FinalPrice = null;
+        LastSeq++;
         return true;
     }
 

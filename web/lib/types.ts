@@ -21,7 +21,7 @@ export interface Card {
   bidCount: number;
   buyNowPrice: number | null;
   endsAt: string;
-  status: "live" | "sold" | "unsold";
+  status: "live" | "sold" | "unsold" | "cancelled";
   sellerHandle: string;
 }
 
@@ -62,6 +62,7 @@ export interface Listing {
 }
 
 export interface You {
+  canCancel: boolean;
   isSeller: boolean;
   hasBid: boolean;
   isLeader: boolean;
@@ -75,7 +76,7 @@ export interface Auction {
   title: string;
   sellerHandle: string;
   currency: string;
-  status: "live" | "sold" | "unsold";
+  status: "live" | "sold" | "unsold" | "cancelled";
   startPrice: number;
   currentPrice: number;
   minNextBid: number;
@@ -110,7 +111,7 @@ export interface MyBidding {
   bidCount: number;
   endsAt: string;
   auctionStatus: string;
-  standing: "winning" | "outbid" | "won" | "lost";
+  standing: "winning" | "outbid" | "won" | "lost" | "cancelled";
 }
 
 export type OrderStatus = "agreement_pending" | "agreed" | "deal_paid" | "received" | "cancelled";

@@ -135,6 +135,7 @@ A single, **location-first** auction marketplace where **consumers, businesses a
 
 | Date | Decision | Why | Where |
 |---|---|---|---|
+| 2026-10-16 | Sellers may cancel live auctions before a second distinct bidder submits an accepted bid; cancellation creates no sale | Allow withdrawal with zero or one bidder while protecting auctions with competing bidders; repeat bids by one person count once | Feature design §5.1 |
 | 2026-10-15 | Store listing photo bytes in PostgreSQL; use our Marketplace.Media interface with an internal SkiaSharp engine | Keep local persistence in the existing database and allow the image engine to be replaced | Feature design §2.1 |
 | 2026-10-09 | Three trading modes (C2C, B2C, B2B) on one bidding engine, released in 3 phases | Shared engine and trust layer; B2C/C2C first for liquidity | §1, §4 |
 | 2026-10-09 | **No escrow and no in-app payment** in the MVP | Simpler and avoids payment licensing. Escrow via a PSP is a possible later upgrade. | §2, [Feature design §6.3](02-feature-design.md#63-later-escrow-via-a-psp) |

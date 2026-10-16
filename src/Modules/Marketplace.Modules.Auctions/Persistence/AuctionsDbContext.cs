@@ -14,6 +14,9 @@ internal sealed class AuctionsDbContext(DbContextOptions<AuctionsDbContext> opti
     public DbSet<Bid> Bids => Set<Bid>();
     public DbSet<BidRequest> BidRequests => Set<BidRequest>();
 
+    public Task<int> CountBiddersAsync(Guid auctionId, CancellationToken ct) =>
+        Bids.Where(b => b.AuctionId == auctionId).Select(b => b.BidderId).Distinct().Take(2).CountAsync(ct);
+
     /// <summary>Loads the auction with a row lock (<c>SELECT … FOR UPDATE</c>): the single writer per auction.</summary>
     public async Task<Auction?> LockAuctionAsync(Guid auctionId, CancellationToken ct) =>
         (await Auctions.FromSql($"SELECT * FROM auctions.auction WHERE id = {auctionId} FOR UPDATE").ToListAsync(ct)).SingleOrDefault();

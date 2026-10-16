@@ -156,6 +156,8 @@ Signals: bidder linked to the seller (device, IP, phone, address, location), bid
 ## 5. Auction close and settlement
 
 ### 5.1 Close
+
+- **Seller cancellation (implemented):** the seller can cancel a live, unexpired auction until two distinct bidders have submitted accepted bids. Repeat bids and automatic proxy rows by the same person count once; rejected bids do not count. Cancellation is irreversible, retains bid history and creates no winner or deal, even if the reserve was met. The item page confirms the action and shows **Cancelled — no sale**.
 At end time (after any extension), the system determines the outcome:
 - **Sold:** highest valid bid ≥ reserve. Creates an order and its **deal agreement** (§6) for the winner at the final price (+ buyer's premium).
 - **Unsold:** no bids, or reserve not met. The seller may send a **Second Chance / offer to the top bidder**, or relist.

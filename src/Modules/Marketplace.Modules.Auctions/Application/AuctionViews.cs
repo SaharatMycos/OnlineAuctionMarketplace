@@ -4,7 +4,7 @@ using Marketplace.SharedKernel.Events;
 namespace Marketplace.Modules.Auctions.Application;
 
 /// <summary>What the caller knows about their own position. <c>YourMax</c> is only ever the caller's own.</summary>
-internal sealed record YouView(bool IsSeller, bool HasBid, bool IsLeader, decimal? YourMax, bool Won);
+internal sealed record YouView(bool IsSeller, bool HasBid, bool IsLeader, decimal? YourMax, bool Won, bool CanCancel = false);
 
 /// <summary>Public auction state. No proxy maxima, no reserve amount, leader handle masked.</summary>
 internal sealed record AuctionView(
@@ -33,6 +33,7 @@ internal sealed record AuctionView(
     {
         AuctionStatus.Live => "live",
         AuctionStatus.ClosedSold => "sold",
+        AuctionStatus.Cancelled => "cancelled",
         _ => "unsold",
     };
 
@@ -69,5 +70,5 @@ internal sealed record MyBiddingItem(
     int BidCount,
     DateTimeOffset EndsAt,
     string AuctionStatus,
-    /// <summary>winning, outbid, won or lost.</summary>
+    /// <summary>winning, outbid, won, lost or cancelled.</summary>
     string Standing);
