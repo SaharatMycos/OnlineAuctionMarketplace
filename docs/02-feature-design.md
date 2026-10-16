@@ -12,7 +12,14 @@ Phase tags: **[P1]** MVP, **[P2]** B2B release, **[P3]** procurement/live.
 
 ## 1. Accounts, identity and organisations
 
+Implemented web preview (2026-10-16): `/signin` presents an email form with mock account shortcuts hidden by default under “Hint: trying the demo?”. Development authentication accepts any email without a password; a production identity provider remains planned. Successful sign-in returns to a same-origin destination; the header links back to the current page when signing in. Signed-in users see their display name and a sign-out control. Both actions show pending and retryable error states, and reload the page after success to clear account-specific client state. Sign-out deletes the session cookies and returns to browsing.
+
 ### 1.1 Account types
+
+Account flow maintenance (2026-10-16): sign-in and sign-up share `web/components/AccountForm.tsx`. Return URLs are checked by `web/lib/navigation.ts`; malformed or external destinations fall back to `/` so a successful session is not reported as a failed sign-in.
+
+Implemented sign-up preview (2026-10-16): `/signup` collects a display name (up to 100 characters) and email, creates the account through the existing development token endpoint and establishes the same cookie session as sign-in. The header and account forms link to both flows, preserving the return destination. New accounts default to `/me`. The BFF validates input before forwarding it. Existing emails sign into the existing account without renaming it, matching development authentication semantics. The collapsed demo hint explains this behavior; passwords, email verification and production registration remain deferred.
+
 | Type | Can buy | Can sell | Verification | Phase |
 |---|---|---|---|---|
 | Individual | Yes | Yes (C2C) | Email + phone. Sellers verify ID before a first sale. | P1 |

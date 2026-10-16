@@ -5,11 +5,34 @@ const cookieOptions = { path: "/", sameSite: "lax" as const, maxAge: 60 * 60 * 1
 
 /** Dev sign-in: exchanges an email for a token from the api's dev endpoint (dev auth only). */
 export async function POST(req: NextRequest) {
-  const { email } = (await req.json()) as { email?: string };
+  let input: { email?: unknown; displayName?: unknown };
+  try {
+    input = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+  if (!input || typeof input.email !== "string") {
+    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  }
+  const email = input.email.trim();
+  if (!email || email.length > 320 || !email.includes("@")) {
+    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  }
+
+  let displayName: string | undefined;
+  if (input.displayName !== undefined) {
+    if (typeof input.displayName !== "string") {
+      return NextResponse.json({ error: "Enter a display name of up to 100 characters." }, { status: 400 });
+    }
+    displayName = input.displayName.trim();
+    if (!displayName || displayName.length > 100) {
+      return NextResponse.json({ error: "Enter a display name of up to 100 characters." }, { status: 400 });
+    }
+  }
   const res = await fetch(`${API_URL}/v1/dev/token`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, displayName }),
     cache: "no-store",
   });
   if (!res.ok) return new NextResponse(await res.text(), { status: res.status });

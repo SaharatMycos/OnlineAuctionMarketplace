@@ -216,3 +216,10 @@ legend { font-weight: 700; padding: 0 6px; }
   .search { order: 5; flex-basis: 100%; }
   .table { display: block; overflow-x: auto; }
 }
+
+/* Sign in */
+.signin-panel { max-width: 440px; margin: 32px auto; padding: 28px; }
+.signin-panel h1 { margin-top: 20px; }
+.signin-hint { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+.signin-hint summary { cursor: pointer; }
+.signin-hint .btn { flex-wrap: wrap; overflow-wrap: anywhere; }

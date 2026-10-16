@@ -149,7 +149,13 @@ A single, **location-first** auction marketplace where **consumers, businesses a
 | 2026-10-09 | **Events:** per-module outbox + inbox, relayed by the worker; browser pushes go worker → Redis → realtime (SignalR) | Exactly-once effects without a broker; realtime stays a separate, scalable process | [05 Architecture §2.2a](05-architecture.md#22a-runtime-mechanics--now) |
 | 2026-10-09 | **Demo defaults:** USD (`Marketplace:Currency`), km, Chicago region; auction lengths also allow 5 min and 1 h for demos and testing | Launch market still open (§9 Q1, Q10); short auctions make the close and deal flow easy to try | Feature design §3.1 lists 1, 3, 5, 7, 10 days |
 
+| 2026-10-16 | **Email-first sign-in preview:** mock accounts appear in a collapsed demo hint; sign-out clears the session and returns to browsing | Keep the account flow usable while development JWT authentication remains in place; production identity provider is still deferred | Feature design §1 |
+
+| 2026-10-16 | **Sign-up preview reuses development authentication:** collect display name and email, then establish a session; existing emails sign in unchanged | Extend the account UI while retaining the current dev-only identity model; production registration and verification remain deferred | Feature design §1.1 |
+
 ## Change log
+
+- **Sign-up preview (2026-10-16):** Name and email registration at `/signup`, automatic session creation and links between account flows. Reuses development authentication; existing emails sign into the existing account. Passwords and email verification remain planned.
 
 - **Photo uploads (2026-10-15):** Sellers upload and arrange up to 24 photos before publishing; processed JPEG bytes live in PostgreSQL.
 - **Code (2026-10-09):** MVP core loop implemented: dev sign-in, location-first feed and search, listings, English auctions with proxy bidding, soft close, Buy Now and the close job, deal agreement flow, live updates, web pages.
