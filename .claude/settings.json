@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet tool restore)",
+      "Bash(npm ci)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run build)",
+      "Bash(node --test *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(dotnet test *)",
+      "PowerShell(dotnet tool restore)",
+      "PowerShell(npm ci)",
+      "PowerShell(npm run typecheck)",
+      "PowerShell(npm run build)",
+      "PowerShell(node --test *)",
+      "PowerShell(git status *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(**/appsettings.Development.json)",
+      "Bash(* init-env.ps1 -Force*)",
+      "Bash(* init-env.ps1 * -Force*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "PowerShell(* init-env.ps1 -Force*)",
+      "PowerShell(* init-env.ps1 * -Force*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push -f*)",
+      "PowerShell(git reset --hard*)",
+      "PowerShell(git clean -f*)"
+    ],
+    "ask": [
+      "Edit(src/Modules/**/Persistence/Migrations/**)",
+      "Bash(dotnet ef database update*)",
+      "Bash(docker compose down*)",
+      "Bash(docker volume rm *)",
+      "Bash(docker system prune*)",
+      "PowerShell(dotnet ef database update*)",
+      "PowerShell(docker compose down*)",
+      "PowerShell(docker volume rm *)",
+      "PowerShell(docker system prune*)"
+    ]
+  }
+}

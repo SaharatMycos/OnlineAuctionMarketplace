@@ -101,7 +101,12 @@ export default function SellForm({ categories, places }: { categories: Category[
   return (
     <form className="form" onSubmit={submit}>
       <fieldset>
-        <legend>Item</legend>
+        <legend>1. Add item photos</legend>
+        <PhotoUploader disabled={busy} onChange={onPhotosChange} />
+      </fieldset>
+
+      <fieldset>
+        <legend>2. Item details</legend>
         <label>
           Category
           <select className="input" value={form.categoryId} onChange={set("categoryId")}>
@@ -128,11 +133,10 @@ export default function SellForm({ categories, places }: { categories: Category[
           Item specifics <span className="muted small">(one per line, e.g. “Brand: Trek”)</span>
           <textarea className="input" rows={3} value={form.specs} onChange={set("specs")} />
         </label>
-        <PhotoUploader disabled={busy} onChange={onPhotosChange} />
       </fieldset>
 
       <fieldset>
-        <legend>Location and delivery</legend>
+        <legend>3. Location and delivery</legend>
         {gps ? (
           <p className="small">
             Using your current location (private).{" "}
@@ -170,7 +174,7 @@ export default function SellForm({ categories, places }: { categories: Category[
       </fieldset>
 
       <fieldset>
-        <legend>Auction</legend>
+        <legend>4. Auction pricing</legend>
         <div className="cols">
           <label>
             Starting bid

@@ -12,6 +12,8 @@ Phase tags: **[P1]** MVP, **[P2]** B2B release, **[P3]** procurement/live.
 
 ## 1. Accounts, identity and organisations
 
+**Implemented static mock workflow (2026-10-16):** [mockup/](../mockup/README.md) starts signed out and mirrors the email-first sign-in, display-name/email sign-up, existing-account reuse, header identity and sign-out flows. Account pages retain validated internal return destinations. Private routes and user actions require a local mock session. Account records use local storage; sessions use tab-scoped session storage, with in-memory fallbacks. Switching accounts clears disposable auction/draft state. This prototype uses no production authentication API, passwords or verified identity.
+
 Implemented web preview (2026-10-16): `/signin` presents an email form with mock account shortcuts hidden by default under “Hint: trying the demo?”. Development authentication accepts any email without a password; a production identity provider remains planned. Successful sign-in returns to a same-origin destination; the header links back to the current page when signing in. Signed-in users see their display name and a sign-out control. Both actions show pending and retryable error states, and reload the page after success to clear account-specific client state. Sign-out deletes the session cookies and returns to browsing.
 
 ### 1.1 Account types
@@ -55,8 +57,9 @@ Sellers can also require "verified bidders only", a minimum feedback score, or a
 
 **Implemented photo uploads (2026-10-15):** Up to 24 optional JPEG/PNG/WebP files, 10 MiB and 40 megapixels each. Sellers preview, retry, remove and reorder before publication; the first image is the cover. The server applies orientation, resizes to a maximum 2,048-pixel edge without upscaling, flattens transparency to white and re-encodes JPEG at quality 85 without source metadata. Original files are not retained. Draft/unattached images are seller-only; published and ended images are public. Published photos cannot be edited. Unattached uploads expire after 24 hours; attached draft images do not.
 
-- Guided flow: category → title → photos (up to 24, plus video in P2) → item specifics (category-driven attributes) → condition → description → **item location + delivery options** (pickup / shipping, see §9.2) → format and pricing → shipping → returns → preview.
-- **Smart assist:** suggested category and title from photos, a price guide from comparable sold items, and a missing-info checklist.
+- **Implemented image-first production form (2026-10-16):** `/sell` starts with a prominent photo picker and drag-and-drop area, followed by item details, location/delivery and auction pricing. Optional photos support existing preview, upload retry, removal and ordering; the first photo is the cover. Pending or failed uploads block publication until resolved or removed. AI assistance remains planned; the production form does not infer listing details from photos.
+- Planned guided additions: category-driven attributes, video in P2, format selection, return policies and a separate preview step. The current form opens an English auction directly.
+- **Smart assist (planned for production):** suggested category, title and description from photos, a price guide from comparable sold items, and a missing-info checklist. The [static prototype](../mockup/README.md) now starts with image selection and automatically prepares editable title/description/category suggestions using demo images or filename hints; it does not perform visual recognition or provide a real price guide. Sellers explicitly apply suggestions and review fields before publishing. The mock requires a photo; production uploads remain optional.
 - Drafts autosave. Listings can be scheduled to start at a set time.
 - **Bulk tools** for businesses: CSV/Excel import, templates, a Seller API [P2], and relisting of unsold items.
 
@@ -275,6 +278,8 @@ Pickup-only listings outside the buyer's radius are hidden from the feed.
 - Lots show the pickup/warehouse location. Buyers can filter by distance to their own warehouses. Freight quotes use origin/destination.
 
 ---
+
+Personalized bidder suggestions (AI-summarized interest profiles and a **Suggested for you** homepage section) were cut from the production scope on 2026-10-19; see the [decision log](01-product-spec.md#10-decision-log). Discovery stays location-first through Near you, search, categories and ending soon. The [static prototype](../mockup/README.md) still previews search autocomplete and seller text suggestions.
 
 ## 10. Communication and notifications
 

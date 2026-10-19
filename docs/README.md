@@ -13,6 +13,7 @@ Specification and design drafts for a **location-first**, multi-mode (C2C, B2C, 
 | [07 ER diagram](07-er-diagram.md) | Current database schema per module, generated from the EF Core model snapshots: tables, keys, real FKs versus cross-module references, outbox/inbox, privacy columns |
 
 ## Key decisions so far
+
 - **Location-first:** "Near you" by default, with radius, distance, map and pickup promoted. Exact addresses are private.
 - **No escrow and no in-app payment.** After a win, a **deal agreement** (fixed price + handover/payment terms) is accepted by both sides. Payment happens outside the app, and both confirm "Deal paid", then the buyer marks Received.
 - **Modular monolith** (`api`, `realtime`, `worker`). Extract services only when a measured signal calls for it.

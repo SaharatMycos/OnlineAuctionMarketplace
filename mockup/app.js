@@ -44,7 +44,7 @@ const S = {
   searchView: 'list',
   lastResults: [],
   auctions: {},
-  orders: SEED_ORDERS.map(o => ({ ...o })),
+  orders: mockUser?.email === 'alex@example.com' ? SEED_ORDERS.map(o => ({ ...o, terms: { ...o.terms } })) : [],
   approvals: SEED_APPROVALS.map(a => ({ ...a })),
   offers: [],
   meTab: 'bidding',
@@ -83,7 +83,7 @@ function addAuction(l) {
   return a;
 }
 
-const all = () => Object.values(S.auctions);
+const all = () => Object.values(S.auctions).filter(a => a.format === 'english');
 
 // ---------- location (spec: feature design §9) ----------
 // Public point snapped to a ~1 km grid; exact lat/lng never leaves the listing record.
@@ -204,13 +204,16 @@ function createOrder(a, amount) {
       note: '',
     },
   });
-  setTimeout(() => toast(`📝 Deal agreement AG-${id.slice(1)} created and sent to you and ${a.seller.name}.`), 400);
+  const sessionRevision = authRevision;
+  setTimeout(() => { if (sessionRevision === authRevision) toast(`📝 Deal agreement AG-${id.slice(1)} created and sent to you and ${a.seller.name}.`); }, 400);
   return id;
 }
 
 // The mockup has no seller UI, so the seller "responds" after a short delay.
 function sellerResponds(o, field, apply, msg) {
+  const sessionRevision = authRevision;
   setTimeout(() => {
+    if (sessionRevision !== authRevision) return;
     o[field] = Date.now();
     apply();
     toast(msg, 'good');
@@ -281,7 +284,7 @@ function modal(html) {
 }
 function closeModal() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
 
-const tile = (a, cls = '') => `<div class="tile ${cls}" style="--h:${a.hue}">${a.emoji}</div>`;
+const tile = (a, cls = '') => `<div class="tile ${cls}" style="--h:${a.hue}">${a.photos?.length ? `<img src="${escapeText(a.photos[0].url)}" alt="${escapeText(a.title)}">` : a.emoji}</div>`;
 const modeBadge = a => `<span class="badge ${a.mode}">${MODE_LABEL[a.mode]}</span>`;
 const sellerBadge = s => s.type === 'business'
   ? `<span class="badge ${s.verified ? 'ok' : ''}">${s.verified ? '✓ ' : ''}Business</span>`
@@ -297,7 +300,7 @@ function priceLabel(a) {
 function card(a) {
   const watched = S.watch.has(a.id);
   return `<a class="card" href="#/item/${a.id}">
-    <div class="tile" style="--h:${a.hue}">${a.emoji}
+    <div class="tile" style="--h:${a.hue}">${a.photos?.length ? `<img src="${escapeText(a.photos[0].url)}" alt="${escapeText(a.title)}">` : a.emoji}
       <span class="fmt">${FORMAT_LABEL[a.format]}</span>
       <button class="watch-btn" data-action="watch" data-id="${a.id}" aria-label="${watched ? 'Remove from' : 'Add to'} watchlist">${watched ? '♥' : '♡'}</button>
     </div>
@@ -381,10 +384,10 @@ function pageSearch(params) {
       <fieldset><legend>Delivery</legend>
         ${check('delivery', 'pickup', '📍 Local pickup')}${check('delivery', 'ship', '📦 Shipping')}
       </fieldset>
-      <fieldset><legend>Format</legend>
+      <fieldset hidden><legend>Format</legend>
         ${Object.entries(FORMAT_LABEL).map(([k, v]) => check('formats', k, v)).join('')}
       </fieldset>
-      <fieldset><legend>Trading mode</legend>
+      <fieldset hidden><legend>Trading mode</legend>
         ${check('modes', 'c2c', 'C2C (people)')}${check('modes', 'b2c', 'B2C (stores)')}${check('modes', 'b2b', 'B2B (business only)')}
       </fieldset>
       <fieldset><legend>Seller</legend>
@@ -400,7 +403,7 @@ function pageSearch(params) {
           ${[['nearest', 'Nearest first'], ['ending', 'Ending soonest'], ['low', 'Price: low to high'], ['high', 'Price: high to low'], ['bids', 'Most bids']].map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
         </select>
       </fieldset>
-      <button class="btn sm" data-action="save-search">🔔 Save this search</button>
+      <p class="hint">Results respect your location and delivery preferences.</p>
     </aside>
     <div id="results">${searchResults()}</div>
   </div>`;
@@ -412,7 +415,7 @@ function searchResults() {
   const f = S.filters;
   const q = f.q.toLowerCase();
   let list = all().filter(a => a.status === 'live' && inMode(a)
-    && (!q || (a.title + ' ' + a.cat + ' ' + a.seller.name).toLowerCase().includes(q))
+    && (!q || (a.title + ' ' + a.cat + ' ' + a.seller.name + ' ' + inferTopics(`${a.title} ${a.desc || ''}`).tags.join(' ')).toLowerCase().includes(q))
     && (!f.cat || a.cat === f.cat)
     && (!f.formats.size || f.formats.has(a.format))
     && (!f.modes.size || f.modes.has(a.mode))
@@ -535,6 +538,7 @@ function b2bTerms(a) {
 }
 
 function buyBox(a) {
+  if (a.seller.name === 'You') return `<h1>${a.title}</h1><p class="notice info">You opened this auction. Buyers can bid until it ends.</p><div class="big tnum" data-price="${a.id}">${money(a.price)}</div><p><span data-bids="${a.id}">${a.bids} bids</span> · <span class="cd" data-cd="${a.id}"></span></p>`;
   const head = `<div class="badges">${modeBadge(a)}<span class="badge">${FORMAT_LABEL[a.format]}${a.format === 'sealed' ? (a.sealedType === 'second' ? ' · 2nd price' : ' · 1st price') : ''}</span>${sellerBadge(a.seller)}</div>
     <h1>${a.title}</h1>
     <div class="muted small">${a.cond} · 📍 ${a.area} (${fmtDist(dist(a))}) · ${a.watchers} watching</div>
@@ -633,7 +637,7 @@ function pageItem(id) {
     <div>
       <section class="gallery">
         ${tile(a, 'main')}
-        <div class="thumbs">${[0, 40, 80, 140].map((d, i) => `<div class="tile ${i ? '' : 'on'}" style="--h:${a.hue + d}" data-action="thumb" data-h="${a.hue + d}">${a.emoji}</div>`).join('')}</div>
+        <div class="thumbs">${a.photos?.length ? a.photos.map((photo, index) => `<button type="button" class="photo-thumb" data-preview="view-photo" data-auction="${a.id}" data-index="${index}" aria-label="View photo ${index + 1}"><img src="${escapeText(photo.url)}" alt="Item photo ${index + 1}"></button>`).join('') : [0, 40, 80, 140].map((d, i) => `<div class="tile ${i ? '' : 'on'}" style="--h:${a.hue + d}" data-action="thumb" data-h="${a.hue + d}">${a.emoji}</div>`).join('')}</div>
       </section>
       <section class="panel" style="margin-top:16px">
         <h2>Description</h2>
@@ -968,17 +972,27 @@ function render() {
   S.viewing = null;
   const [p, id] = parts;
   let html;
-  if (!p) html = pageHome();
+  if (['me', 'sell', 'order', 'business', 'rfq'].includes(p) && !mockUser) {
+    const next = currentMockDestination();
+    location.hash = '#/signin?next=' + encodeURIComponent(next);
+    html = previewAccount('signin', { next });
+  }
+  else if (p === 'signin' || p === 'signup') {
+    if (mockUser) { location.hash = '#/me'; html = previewMe(); }
+    else html = previewAccount(p, params);
+  }
+  else if (!p) html = previewHome();
   else if (p === 'search') html = pageSearch(params);
   else if (p === 'item') html = pageItem(id);
   else if (p === 'order') html = pageOrder(id);
-  else if (p === 'me') html = pageMe();
-  else if (p === 'sell') html = pageSell();
+  else if (p === 'me') html = previewMe();
+  else if (p === 'sell') html = previewSell();
   else if (p === 'business') html = pageBusiness();
   else if (p === 'rfq') html = pageRFQ();
   else html = `<div class="empty">Page not found. <a href="#/">Go home</a></div>`;
   unmountMaps($('#app'));
   $('#app').innerHTML = html;
+  renderMockUserMenu();
   $$('.modebar button').forEach(b => b.setAttribute('aria-selected', b.dataset.mode === S.mode));
   $('[data-change="account"]').value = S.account;
   updateLocChip();
@@ -1232,6 +1246,7 @@ const actions = {
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
+  if (el && ['watch', 'confirm-bid', 'buy-now', 'confirm-buy', 'dutch-buy', 'offer', 'mark-received', 'confirm-paid', 'dispute', 'review', 'publish'].includes(el.dataset.action) && !requireMockSignIn()) { e.preventDefault(); return; }
   if (el && actions[el.dataset.action]) actions[el.dataset.action](el, e);
 });
 
@@ -1322,6 +1337,7 @@ const forms = {
 
 document.addEventListener('submit', e => {
   const f = e.target;
+  if (forms[f.dataset.form] && f.dataset.form !== 'search' && !mockUser) { e.preventDefault(); requireMockSignIn(); return; }
   if (forms[f.dataset.form]) { e.preventDefault(); forms[f.dataset.form](f); }
 });
 

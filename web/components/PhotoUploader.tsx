@@ -13,6 +13,7 @@ export default function PhotoUploader({ disabled, onChange }: {
 }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [error, setError] = useState("");
+  const [dragging, setDragging] = useState(false);
   const uploading = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const previews = useRef(new Set<string>());
@@ -45,7 +46,7 @@ export default function PhotoUploader({ disabled, onChange }: {
   }, [photos]);
 
   function select(files: FileList | null) {
-    if (!files) return;
+    if (disabled || !files) return;
     setError("");
     const incoming: Photo[] = [];
     for (const file of Array.from(files)) {
@@ -77,18 +78,26 @@ export default function PhotoUploader({ disabled, onChange }: {
 
   return (
     <div>
-      <p>Upload photos <span className="muted small">(optional, up to 24; first photo is the cover)</span></p>
-      <p className="small muted" id="listing-photos-help">Choose images from your computer or phone. JPEG, PNG or WebP, up to 10 MiB each. Location metadata is removed.</p>
-      <button type="button" className="btn" aria-describedby="listing-photos-help" disabled={disabled || photos.length >= 24} onClick={() => fileInput.current?.click()}>
-        Choose images from your device
-      </button>
+      <div className={`photo-dropzone${dragging ? " dragging" : ""}`}
+        onDragOver={(e) => { e.preventDefault(); if (!disabled && photos.length < 24) setDragging(true); }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); }}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); select(e.dataTransfer.files); }}>
+        <span className="photo-dropzone-icon" aria-hidden="true">＋</span>
+        <p><strong>Show buyers what you&apos;re selling</strong></p>
+        <button type="button" className="btn primary" aria-describedby="listing-photos-help" disabled={disabled || photos.length >= 24} onClick={() => fileInput.current?.click()}>
+          Choose photos
+        </button>
+        <p className="small muted">or drag and drop them here</p>
+        <p className="small muted" id="listing-photos-help">Optional, up to 24 photos. JPEG, PNG or WebP, up to 10 MiB each. Location metadata is removed.</p>
+      </div>
+      <p className="small muted">{photos.length}/24 photos · The first photo is your cover. Use the arrows to reorder.</p>
       <input ref={fileInput} id="listing-photos" aria-label="Upload photos" hidden type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={disabled || photos.length >= 24}
         onChange={(e) => { select(e.target.files); e.target.value = ""; }} />
       {error && <p className="error" role="alert">{error}</p>}
-      <ol aria-label="Listing photos" style={{ padding: 0, listStyle: "none" }}>
+      <ol aria-label="Listing photos" className="photo-grid">
         {photos.map((photo, index) => (
-          <li key={photo.key} className="panel">
-            <img src={photo.preview} alt={"Photo " + (index + 1) + ": " + photo.file.name} width={120} height={90} style={{ objectFit: "cover" }} />
+          <li key={photo.key} className="panel photo-preview">
+            <img src={photo.preview} alt={"Photo " + (index + 1) + ": " + photo.file.name} width={240} height={180} />
             <p className="small" aria-live="polite">{index === 0 ? "Cover · " : ""}{photo.status === "ready" ? "Uploaded" : photo.status === "failed" ? photo.error : photo.status === "uploading" ? "Uploading…" : photo.status === "removing" ? "Removing…" : "Waiting…"}</p>
             <div className="radio-row">
               <button type="button" className="btn" disabled={disabled || index === 0} aria-label={"Move photo " + (index + 1) + " earlier"} onClick={() => move(index, -1)}>←</button>

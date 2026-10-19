@@ -224,6 +224,6 @@ Related: [04 Project setup](04-project-setup.md) · [05 Architecture](05-archite
 
 ## Listing photo uploads
 
-On `/sell`, select **Choose images from your device** to open the local file picker. Multiple images can be selected together. This is the single visible upload control; the native file input is hidden and activated by the button.
+On `/sell`, photos appear first, before item details, location/delivery and auction pricing. Select **Choose photos** to open the local file picker, or drag files onto the upload area. Multiple images can be selected together. The native file input is hidden and activated by the keyboard-accessible button. A responsive thumbnail grid shows upload status, retry/removal controls and ordering arrows; the first photo is the cover. Photos remain optional. AI title, description and category suggestions are not yet integrated into production.
 
 The sell form uploads files sequentially through the BFF, retaining successful IDs when publication fails. Sellers can preview, reorder, remove and retry individual photos; the first photo becomes the cover. Publication waits for successful uploads. The proxy forwards binary bodies and image responses without text conversion. Tokens stay in httpOnly cookies. The API returns API-relative /v1/listing-photos/{id} photo URLs; the web maps them to same-origin /api/proxy paths (mediaUrl in web/lib/format.ts), which work for both draft owners and public listing viewers.

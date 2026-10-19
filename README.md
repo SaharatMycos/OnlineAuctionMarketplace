@@ -50,6 +50,7 @@ src/
   Marketplace.Worker/         Background process: outbox relay (event handlers) + jobs (auctions.close every second)
   Marketplace.Bootstrap/      Composes the app: module catalogue, shared registration, event registry, Redis publisher
   Marketplace.SharedKernel/   IModule, IClock, ModuleDbContext, outbox/inbox + processor, events, auth, geo privacy, jobs
+  Marketplace.Media/          Standalone image processing for listing photos (IImageProcessor)
   Modules/
     Marketplace.Modules.<Name>/            Domain/ Application/ Persistence/ Endpoints/ + <Name>Module.cs
     Marketplace.Modules.<Name>.Contracts/  public events and query interfaces (Location, Catalog, Auctions, Orders)
@@ -58,12 +59,14 @@ tests/
   Marketplace.UnitTests/          domain rules and proxy-bid property tests
   Marketplace.IntegrationTests/   full loop against PostGIS in Docker (Testcontainers)
   Marketplace.Api.Tests/          in-process API smoke tests
-web/                          Next.js (App Router)      http://localhost:3000  (BFF proxy, SignalR client)
+  Marketplace.Media.Tests/        image-processing checks
+web/                          Next.js (App Router)      http://localhost:3000  (BFF proxy, SignalR client; tests in web/tests)
+.github/workflows/ci.yml      CI: full backend suite + web typecheck, tests and build on push to main and pull requests
 scripts/init-env.ps1          Creates .env (git-ignored secrets) from .env.example
 scripts/seed-demo.ps1         Demo data through the public API
 docs/  mockup/                specs and prototype
 Dockerfile                    One image recipe for api / realtime / worker (build arg PROJECT)
-docker-compose.yml            Full stack: web, api, realtime, worker, Postgres + PostGIS, Redis, OpenSearch (profile "search")
+docker-compose.yml            Full stack: web, api, realtime, worker, Redis, OpenSearch (profile "search"); Postgres runs on the host
 ```
 
 The modules are Identity, Location, Catalog, Auctions, Orders, Billing, Reviews, Messaging, Notifications, Search and Admin.

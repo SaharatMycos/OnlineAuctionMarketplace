@@ -13,8 +13,9 @@ export default async function SellPage() {
     <div className="narrow">
       <h1>Open an auction</h1>
       <p className="muted">
-        Buyers near you see it first. Your exact address stays private: buyers see the area and an approximate
-        distance, and only the winning buyer gets the address once you both accept the deal agreement.
+        Start with photos, then add item details, pickup or shipping options, and your auction price.
+        Buyers see your area and an approximate distance. Only the winning buyer gets your exact address
+        once you both accept the deal agreement.
       </p>
       <SellForm categories={categories} places={places} />
     </div>

@@ -1,4 +1,4 @@
-# Repository guidance for Codex
+# Repository guidance for coding agents
 
 ## Project and sources
 
@@ -13,8 +13,9 @@ Read README.md for setup and commands, docs/05-architecture.md for structure, an
 - src/Marketplace.Worker: outbox relay and background jobs.
 - src/Marketplace.Bootstrap: module catalogue and application composition.
 - src/Marketplace.SharedKernel: shared persistence, events, auth, clock, geo and jobs.
+- src/Marketplace.Media: standalone image-processing library (IImageProcessor); SkiaSharp stays internal.
 - src/Modules/Marketplace.Modules.<Name>: Domain, Application, Persistence, Endpoints and event handlers. Public cross-module contracts live in separate *.Contracts projects.
-- tests/: architecture, unit, integration and API smoke test projects.
+- tests/: architecture, unit, integration, media and API smoke test projects. Unit and integration tests are shared projects with one folder per module; don't add per-module test projects.
 - web/: Next.js app, BFF proxy and SignalR client. mockup/ is a separate vanilla JavaScript prototype.
 
 ## Architecture and domain rules
@@ -55,8 +56,11 @@ Run commands from the repository root unless noted, choosing checks appropriate 
 - Architecture and migration drift: dotnet test tests/Marketplace.ArchitectureTests
 - Domain rules: dotnet test tests/Marketplace.UnitTests
 - API smoke tests: dotnet test tests/Marketplace.Api.Tests
+- Image processing: dotnet test tests/Marketplace.Media.Tests
 - Full backend suite: dotnet test Marketplace.slnx (Docker must be running for integration tests).
-- Web, from web/: npm ci, then npm run typecheck and npm run build.
+- Web, from web/: npm ci, then npm run typecheck, node --test tests/*.cjs and npm run build. Pass the glob; node --test tests/ fails on Node 24.
+
+CI (.github/workflows/ci.yml) runs the full backend suite and the web checks on every push to main and every pull request. Keep it in step when you add a test project or a web check.
 
 Add regression coverage for changed behavior using the existing test projects. Integration tests use the shared MarketplaceFixture, FakeClock and explicit outbox draining. Keep time moving forward and create independent test data. For documentation-only edits, verify paths and commands without starting services.
 

@@ -20,6 +20,7 @@ A location-first auction marketplace for C2C, B2C and B2B. The specs in `docs/` 
 | `src/Marketplace.Worker` | `OutboxRelay` (calls `OutboxProcessor`) and `JobRunner` (every `IBackgroundJob`, e.g. `auctions.close`). |
 | `src/Marketplace.Bootstrap` | `ModuleCatalog.All`, `AddMarketplace()` (data source, event registry, outbox processor, modules), Redis publisher. The only project that references every module. |
 | `src/Marketplace.SharedKernel` | <ul><li>`IModule`, `IClock`, `ProblemException`, `PostgresHealthCheck`</li><li>`Persistence/`: `ModuleDbContext` with `Publish()`, `AddModuleDbContext<T>`, design-time factory, `DatabaseMigrator`</li><li>`Outbox/`: outbox, inbox, `OutboxProcessor`</li><li>`Events/`: `[IntegrationEvent]`, `IntegrationEventHandler<TEvent,TContext>`, `IRealtimeEvent`, `RealtimeGroups`, `Handles.Mask`</li><li>`Auth/`: `ICurrentUser`, `DevTokenIssuer`, JWT setup</li><li>`Geo/`: `GeoPoints`, `PublicGrid`</li><li>`Jobs/`: `IBackgroundJob`</li></ul> |
+| `src/Marketplace.Media` | Standalone image-processing library (`IImageProcessor`, `ProcessedImage`) used for listing photos. SkiaSharp and its native types stay internal. |
 | `src/Modules/Marketplace.Modules.<Name>` | One project per module. Live: Identity, Location, Catalog, Auctions, Orders, Search. Shells: Billing, Reviews, Messaging, Notifications, Admin. Folders: `Domain/` `Application/` `Persistence/` (`DbContext`, configurations, `Migrations/`) `Endpoints/` + `<Name>Module.cs`. |
 | `src/Modules/Marketplace.Modules.<Name>.Contracts` | Public events + query interfaces: Location (`ILocationService`), Catalog (`ListingPublished`, `IListingQueries`), Auctions (`AuctionStarted`, `BidPlaced`, `AuctionClosed`), Orders (`OrderUpdated`). |
 | `dotnet-tools.json` | Pins `dotnet-ef` 10.0.12. Run `dotnet tool restore` once. |
@@ -27,13 +28,16 @@ A location-first auction marketplace for C2C, B2C and B2B. The specs in `docs/` 
 | `tests/Marketplace.UnitTests` | Domain rules + proxy-bid property tests (`InternalsVisibleTo` from Auctions and Orders) |
 | `tests/Marketplace.IntegrationTests` | `MarketplaceFixture`: api in-process on Testcontainers PostGIS, `FakeClock`, `CapturingRealtimePublisher`, `DrainOutboxAsync()`, `CloseDueAuctionsAsync()`, `SignInAsync(name)`; helpers in `Scenario.cs` |
 | `tests/Marketplace.Api.Tests` | In-process API smoke tests (no database) |
+| `tests/Marketplace.Media.Tests` | Image-processing checks for `Marketplace.Media` |
+| `web/tests/*.cjs` | Node test runner tests for web helpers: `node --test tests/*.cjs` from `web/` |
+| `.github/workflows/ci.yml` | CI: full backend suite (including Testcontainers) plus web typecheck, tests and build |
 | `web/` | Next.js App Router, port 3000. Server components call `lib/api.ts`; client components call `lib/client.ts` → `/api/proxy/*` (BFF adds the token from the httpOnly cookie); realtime via `lib/realtime.ts` `useRealtime()`. |
 | `scripts/seed-demo.ps1` | Demo data through the public API (`-ShortAuctions` for 5-minute auctions) |
 | `docs/`, `mockup/` | Specs (v0.2) and the clickable vanilla-JS prototype (port 5173) |
 
 ## Architecture rules
 
-These are enforced by tests. Don't work around them.
+Don't work around them. Rules 1, 2 and 5 are enforced by `tests/Marketplace.ArchitectureTests`; rules 3, 4 and 6 and "implementation types stay internal" are not tested yet, so they depend on review.
 
 1. **A module owns one Postgres schema**, named after `IModule.Name` (lowercase), modelled **code-first** by exactly one `<Name>DbContext : ModuleDbContext`. Every entity it maps lives in that schema. Never map another module's tables.
 2. **A module never references another module's project.** If module A needs to call B, create `Marketplace.Modules.B.Contracts` (interfaces and DTOs only) and reference that.
@@ -63,10 +67,9 @@ After changing a service, rebuild just that one with `docker compose up -d --bui
 **Local hot reload:** stop the app containers first, because they use the same ports (`docker compose stop web api realtime worker`). Then:
 ```bash
 docker compose up -d --wait redis
-dotnet test Marketplace.slnx
 dotnet run --project src/Marketplace.Api
 ```
-Check `http://localhost:5080/health/ready` (should return `Healthy`) and `/v1/modules`. If Docker reports that `dockerDesktopLinuxEngine` can't be found, start Docker Desktop and wait for `docker info` to succeed. To see what's applied, run `docker compose logs api | Select-String Migrated`, or query one module's history:
+Run `dotnet run` for `src/Marketplace.Realtime` and `src/Marketplace.Worker` in their own terminals, and `npm run dev` in `web/`, as needed. Check `http://localhost:5080/health/ready` (should return `Healthy`) and `/v1/modules`. If Docker reports that `dockerDesktopLinuxEngine` can't be found, start Docker Desktop and wait for `docker info` to succeed. To see what's applied, run `docker compose logs api | Select-String Migrated`, or query one module's history:
 `psql -h localhost -U marketplace -d marketplace -c "SELECT * FROM auctions.__ef_migrations_history"`
 
 ### Add a module
@@ -101,7 +104,7 @@ Follow the target layout in `docs/05-architecture.md` §3.3:
 - `Persistence/` holds the DbContext, `Configurations/` and `Migrations/`.
 - `Endpoints/` holds HTTP.
 - `Events/` holds handlers for other modules' events.
-- Add a `tests/Marketplace.Modules.<Name>.Tests` project.
+- Add tests to the shared projects in a `<Name>/` folder: `tests/Marketplace.UnitTests` for domain rules, `tests/Marketplace.IntegrationTests` for persistence, events and HTTP. Don't create per-module test projects.
 - Everything stays `internal` except the module class and `*.Contracts`.
 
 ### Add an integration event and its handler
@@ -139,10 +142,9 @@ Add a static `Endpoints/<Name>Endpoints.Map(app)` and call it from the module's 
   - Time only moves forward (`Clock.Set` to the future), and every test makes its own listings.
 
 ## Definition of done
-- `dotnet build` has no new warnings, and `dotnet test Marketplace.slnx` is green.
+- `dotnet build` adds no warnings beyond the existing baseline (currently EF1002 in `OutboxProcessor.cs`; warnings aren't errors, so compare the output yourself), and `dotnet test Marketplace.slnx` is green. CI runs the same suite.
 - The behaviour matches the spec section (see the spec map). If the code had to differ, update the spec in the same change and add a row to the product spec's §10 decision log.
 - Location privacy holds: no exact address or exact coordinates in any public response.
-- If a change affects the project hub note at `D:\AgentBrainVault\Projects\online-auction-marketplace\online-auction-marketplace.md` (decisions, how to run), update it.
 
 ## Gotchas
 - **EF child entities with code-generated Guid keys** (e.g. `DealEvent` appended to `Order.Events`) need `Property(x => x.Id).ValueGeneratedNever()`. Otherwise EF treats them as existing rows, issues an UPDATE and throws `DbUpdateConcurrencyException`.

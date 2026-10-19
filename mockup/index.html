@@ -17,10 +17,10 @@
       </form>
       <nav class="nav">
         <button class="chip loc-chip" data-action="loc" aria-label="Change location">📍 <span id="loc-label">Chicago, IL · 25 km</span></button>
-        <a href="#/sell">Sell</a>
-        <a href="#/me">My auctions</a>
-        <a href="#/business">Business</a>
-        <label class="account">
+        <a href="#/sell">Open auction</a>
+        <a href="#/me" data-signed-in hidden>My auctions</a>
+        <div class="mock-user-menu" id="mock-user-menu"></div>
+        <label class="account" hidden>
           <span class="sr-only">Account</span>
           <select data-change="account" aria-label="Switch account">
             <option value="personal">👤 Alex Kim (personal)</option>
@@ -29,7 +29,7 @@
         </label>
       </nav>
     </div>
-    <div class="modebar">
+    <div class="modebar" hidden>
       <div class="modebar-inner" role="tablist" aria-label="Marketplace mode">
         <button data-action="mode" data-mode="all" role="tab">All</button>
         <button data-action="mode" data-mode="consumer" role="tab">Consumer <span class="muted">C2C · B2C</span></button>
@@ -42,7 +42,7 @@
   <main id="app" tabindex="-1"></main>
 
   <footer class="footer">
-    Clickable mockup for the spec in <code>../docs/</code>. All data is simulated in the browser. Other bidders are bots.
+    Production experience preview. Auctions, autocomplete and AI suggestions are simulated in your browser. Payments happen between buyer and seller.
   </footer>
 
   <div id="modal" hidden></div>
@@ -50,6 +50,8 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="data.js"></script>
+  <script src="auth.js"></script>
+  <script src="ai.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

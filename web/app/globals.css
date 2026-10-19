@@ -181,6 +181,14 @@ section { margin: 28px 0; }
 /* Forms */
 .form { display: grid; gap: 14px; }
 .form label { display: grid; gap: 4px; font-weight: 500; }
+.photo-dropzone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 24px 16px; text-align: center; background: var(--surface-2); }
+.photo-dropzone.dragging, .photo-dropzone:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+.photo-dropzone-icon { display: block; font-size: 2.5rem; line-height: 1; color: var(--accent); }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; padding: 0; list-style: none; }
+.photo-preview { min-width: 0; }
+.photo-preview > img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
+.photo-preview .radio-row { gap: 6px; }
+.photo-preview p { overflow-wrap: anywhere; }
 fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px 14px; display: grid; gap: 12px; background: var(--surface); }
 legend { font-weight: 700; padding: 0 6px; }
 .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
